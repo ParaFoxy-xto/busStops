@@ -11,7 +11,8 @@ def plot_meta_route(
     bus_stops: List[Any],
     output_path: str,
     start_node: Optional[Any] = None,
-    exit_node: Optional[Any] = None
+    exit_node: Optional[Any] = None,
+    color: str = "red",
 ) -> None:
     """
     Plota a rota expandida sobre o grafo original usando Matplotlib.
@@ -36,7 +37,7 @@ def plot_meta_route(
     # Rota
     xs_route = [float(G.nodes[n]['x']) for n in route]
     ys_route = [float(G.nodes[n]['y']) for n in route]
-    ax.plot(xs_route, ys_route, c='red', linewidth=2, label='Rota')
+    ax.plot(xs_route, ys_route, linewidth=2, label=f"Rota {color}", c=color)
 
     # Destaque start e exit em verde
     if start_node is not None:

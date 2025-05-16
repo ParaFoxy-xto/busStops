@@ -77,7 +77,7 @@ python -m rota_aco.cli.run dfs graphml/pequeno.graphml --precision 6 --start-lat
 ###  ACO Tradicional (com visualização)
 
 ```bash
-python -m rota_aco.cli.run meta graphml/pequeno.graphml --precision 6 --start-lat -15.776 --start-lon -47.8716 --exit-lat -15.7601 --exit-lon -47.8670 --k-prune 5 --k-paths 3 --length-percentile 0.75 --top-n 2 --meta-output meta_graph.png --ants 10 --iterations 300 --diversify 10 --pheromone-q 100 --evaporation 0.1 --folium --output final_route.html
+python -m rota_aco.cli.run meta graphml/pequeno.graphml --precision 6 --start-lat -15.776 --start-lon -47.8716 --exit-lat -15.7601 --exit-lon -47.8670 --k-prune 5 --k-paths 3 --length-percentile 0.75 --top-n 2 --meta-output meta_graph.png --ants 10 --iterations 300 --diversify 10 --pheromone-q 100 --evaporation 0.1  --output final_route.png
 ```
 
 ###  ACS Multicolônia (veículos e distância)
@@ -86,7 +86,9 @@ python -m rota_aco.cli.run meta graphml/pequeno.graphml --precision 6 --start-la
 python -m rota_aco.cli.run acs graphml/pequeno.graphml --start-lat -15.776 --start-lon -47.8716 --exit-lat -15.7605 --exit-lon -47.8741 --ants-time 20 --ants-vehicle 20 --iterations 50 --lambda 0.7 --output acs_route.png
 
 ```
-
+```bash
+python -m rota_aco.cli.run acs graphml/grafo.graphml --start-lat -15.77600000 --start-lon -47.87161111 --exit-lat -15.76111111 --exit-lon -47.87461111 --ants-time 20 --ants-vehicle 20 --iterations 50 --lambda 0.7 --output acs_route.png
+```
 ---
 
 ##  Coordenadas Reais de Teste

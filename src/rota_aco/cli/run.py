@@ -206,11 +206,51 @@ def cmd_acs(args):
         lam=args.lam
     )
 
-    # 6) Expande rotas para o grafo original
+    print(f"Distância total: {best_dist}")
+    print(f"Número de rotas: {best_count}")
+
+    # 1) Filtrar opostos
+    filtered_meta = []
+    for rota in meta_routes:
+        rota_f = filter_opposite_meta_route(
+            rota, opposites_proximity, groups
+        )
+        filtered_meta.append(rota_f)
+
+    # 2) Garantir início e fim corretos
+    normalized_meta = []
+    for rota in filtered_meta:
+        # força o início
+        if rota[0] != start:
+            rota.insert(0, start)
+        # corta tudo após exit_node
+        if exit_ in rota:
+            idx = rota.index(exit_)
+            rota = rota[: idx+1]
+        else:
+            rota.append(exit_)
+        normalized_meta.append(rota)
+
+    # 3) Expande para sequência completa de nós do grafo original
     final_routes = [
-        expand_meta_route(r, meta_G, meta_edges)
-        for r in meta_routes
+        expand_meta_route(rota, meta_G, meta_edges)
+        for rota in normalized_meta
     ]
+
+    # 4) Plota (só a primeira, ou todas)
+    if args.output and final_routes:
+            # plota todas as rotas sobre o mesmo grafo
+        for idx, rota in enumerate(final_routes, start=1):
+            plot_meta_route(
+                G,
+                rota,
+                bus_stops,
+                args.output,           
+                start_node=start,
+                exit_node=exit_,
+                color=f"C{idx%10}"      
+        )
+
 
     # 7) Exibe resultados
     print("Melhor conjunto de rotas (expandido):")
@@ -218,16 +258,7 @@ def cmd_acs(args):
         print(f"  Rota {i}: {route}")
     print(f"Distância total: {best_dist}")
     print(f"Número de rotas: {best_count}\n")
-    if args.output:
-
-        plot_meta_route(
-            G,
-            final_routes,
-            bus_stops,
-            args.output,
-            start_node=start,
-            exit_node=exit_
-        )
+    
 
 
 def main():

@@ -3,7 +3,7 @@ import folium
 import numpy as np
 
 # Load the saved graph
-graph = ox.load_graphml("bus_routes.graphml")
+graph = ox.load_graphml("graphml\grafo.graphml")
 
 # Identify bus stop nodes
 bus_stop_nodes = [node for node, data in graph.nodes(data=True) if data.get("bus_stop", False)]
