@@ -22,20 +22,12 @@ class ACSVehicle:
         self.meta_edges = meta_edges
         self.stops = stops
         self.start_node = start_node
-        self.tau = pheromone_matrix   # tau_vehicle compartilhado
+        self.tau = pheromone_matrix
         self.rho = evaporation
         self.Q = Q
 
     def iterate(self, n_ants: int) -> Tuple[List[List[Any]], int]:
-        """
-        Executa n_formigas iterações no meta‐grafo:
-          - Cada formiga faz TSP heurístico repetidas vezes, removendo paradas cobertas
-          - Conta quantas rotas foram necessárias (número de veículos)
-        Retorna:
-          best_meta_routes: lista de meta‐rotas (cada rota é lista de nós do meta‐grafo)
-          best_count: número mínimo de rotas encontrado
-        """
-        best_meta_routes: List[List[Any]] = []
+        best_routes: List[List[Any]] = []
         best_count: int = float('inf')
 
         for _ in range(n_ants):
@@ -43,26 +35,25 @@ class ACSVehicle:
             routes = []
             # gera rotas até cobrir todas as paradas
             while remaining:
-                meta_route = resolver_TSP(self.graph, self.start_node)
-                routes.append(meta_route)
-                covered = set(meta_route) & remaining
+                route = resolver_TSP(self.graph, self.start_node)
+                routes.append(route)
+                covered = set(route) & remaining
                 remaining -= covered
             count = len(routes)
             if count < best_count:
                 best_count = count
-                best_meta_routes = routes
+                best_routes = routes
 
         # evaporação global
         for edge in list(self.tau.keys()):
             self.tau[edge] *= (1 - self.rho)
 
-        # reforço elitista: deposita feromônio em cada aresta usada
-        # inversamente proporcional ao número de rotas
-        for route in best_meta_routes:
+        # reforço elitista: mais feromônio nas arestas usadas
+        for route in best_routes:
             for u, v in zip(route, route[1:]):
-                self.tau[(u, v)] = self.tau.get((u, v), 0) + self.Q / best_count
+                self.tau[(u, v)] = self.tau.get((u, v), 0.0) + (self.Q / best_count)
 
-        return best_meta_routes, best_count
+        return best_routes, best_count
 
     def get_pheromone(self) -> Dict[Tuple[Any, Any], float]:
         return self.tau

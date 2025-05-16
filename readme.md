@@ -83,7 +83,8 @@ python -m rota_aco.cli.run meta graphml/pequeno.graphml --precision 6 --start-la
 ###  ACS Multicolônia (veículos e distância)
 
 ```bash
-python -m rota_aco.cli.run acs graphml/pequeno.graphml --start-lat -15.776 --start-lon -47.8716 --exit-lat -15.7605 --exit-lon -47.8741 --ants-time 20 --ants-vehicle 20 --iterations 50 --lambda 0.7
+python -m rota_aco.cli.run acs graphml/pequeno.graphml --start-lat -15.776 --start-lon -47.8716 --exit-lat -15.7605 --exit-lon -47.8741 --ants-time 20 --ants-vehicle 20 --iterations 50 --lambda 0.7 --output acs_route.png
+
 ```
 
 ---

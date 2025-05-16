@@ -161,8 +161,6 @@ def cmd_meta(args):
         )
 
 def cmd_acs(args):
-
-
     # 1) Carrega grafo e identifica paradas
     G = load_graph(args.graph)
     bus_stops = get_bus_stops(G)
@@ -177,7 +175,7 @@ def cmd_acs(args):
     extra = [start, exit_]
 
     # 3) Constrói meta-grafo
-    meta_G, meta_edges, reps, opp_p, opp_a, mapping, groups = build_meta_graph(
+    meta_G, meta_edges, reps, opposites_proximity, opposites_access, mapping, groups = build_meta_graph(
         G,
         precision=args.precision,
         extra_nodes=extra
@@ -188,16 +186,15 @@ def cmd_acs(args):
     # print(">>> start:", start, type(start))
     # print(">>> meta_edges is dict?", isinstance(meta_edges, dict))
     ctrl = ACSController(
-        meta_G,
-        reps,
-        start,
-        meta_edges,      
+        graph=meta_G,
+        meta_edges=meta_edges,           
+        stops=reps,
+        start_node=start,
         alpha=args.alpha,
         beta=args.beta,
         evaporation=args.evaporation,
-        Q=args.Q
+         Q=args.Q
     )
-
 
 
 
@@ -221,12 +218,23 @@ def cmd_acs(args):
         print(f"  Rota {i}: {route}")
     print(f"Distância total: {best_dist}")
     print(f"Número de rotas: {best_count}\n")
+    if args.output:
+
+        plot_meta_route(
+            G,
+            final_routes,
+            bus_stops,
+            args.output,
+            start_node=start,
+            exit_node=exit_
+        )
+
 
 def main():
     parser = argparse.ArgumentParser(description="rota_aco CLI")
     sub = parser.add_subparsers(dest='cmd')
 
-    # DFS
+    # Subcomando DFS: executa o DFS
     p_dfs = sub.add_parser('dfs', help='Gerar rotas candidatas')
     p_dfs.add_argument('graph')
     p_dfs.add_argument('-p', '--precision', type=int, default=6)
@@ -242,7 +250,7 @@ def main():
     p_dfs.add_argument('--show-labels', action='store_true')
     p_dfs.set_defaults(func=cmd_dfs)
 
-    # META (ACO)
+    # Subcomando META: executa o (ACO)
     p_meta = sub.add_parser('meta', help='Pipeline completo com ACO')
     p_meta.add_argument('graph')
     p_meta.add_argument('-p', '--precision', type=int, default=6)
@@ -265,7 +273,7 @@ def main():
     p_meta.add_argument('-o', '--output', default='route.png')
     p_meta.set_defaults(func=cmd_meta)
 
-        # Subcomando acs: executa o ACS multi-colônia
+    # Subcomando acs: executa o ACS multi-colônia
     p_acs = sub.add_parser(
         "acs",
         help="Execute o ACS-TIME + ACS-VEHICLE para múltiplas rotas"
@@ -297,6 +305,9 @@ def main():
                        help="Taxa de evaporação global")
     p_acs.add_argument("--pheromone-q",  type=float, dest="Q", default=1.0,
                        help="Quantidade de feromônio depositado")
+    p_acs.add_argument("--output", "-o",
+        help="Arquivo PNG para salvar a rota ACS", default=None)
+
     p_acs.set_defaults(func=cmd_acs)
 
 
