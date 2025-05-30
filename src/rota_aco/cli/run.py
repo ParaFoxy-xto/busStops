@@ -203,10 +203,11 @@ def cmd_acs(args):
         n_iterations=args.iterations,
         ants_time=args.ants_time,
         ants_vehicle=args.ants_vehicle,
-        lam=args.lam
+        lam=args.lam,
+        verbose=args.verbose
     )
 
-    print(f"Distância total: {best_dist}")
+    print(f"Distância total: {best_dist:.1f}")
     print(f"Número de rotas: {best_count}")
 
     # 1) Filtrar opostos
@@ -239,25 +240,25 @@ def cmd_acs(args):
 
     # 4) Plota (só a primeira, ou todas)
     if args.output and final_routes:
-            # plota todas as rotas sobre o mesmo grafo
         for idx, rota in enumerate(final_routes, start=1):
+            out = args.output.replace(".png", f"_{idx}.png")
             plot_meta_route(
                 G,
                 rota,
                 bus_stops,
-                args.output,           
+                out,
                 start_node=start,
                 exit_node=exit_,
-                color=f"C{idx%10}"      
-        )
+                color=f"C{idx%10}"
+            )
 
 
     # 7) Exibe resultados
-    print("Melhor conjunto de rotas (expandido):")
-    for i, route in enumerate(final_routes, 1):
-        print(f"  Rota {i}: {route}")
-    print(f"Distância total: {best_dist}")
-    print(f"Número de rotas: {best_count}\n")
+    #print("Melhor conjunto de rotas (expandido):")
+    #for i, route in enumerate(final_routes, 1):
+    #    print(f"  Rota {i}: {route}")
+    #print(f"Distância total: {best_dist}")
+    #print(f"Número de rotas: {best_count}\n")
     
 
 
@@ -336,6 +337,8 @@ def main():
                        help="Taxa de evaporação global")
     p_acs.add_argument("--pheromone-q",  type=float, dest="Q", default=1.0,
                        help="Quantidade de feromônio depositado")
+    p_acs.add_argument("--verbose", action="store_true",
+                       help="Exibe logs detalhados de cada iteração do ACS")
     p_acs.add_argument("--output", "-o",
         help="Arquivo PNG para salvar a rota ACS", default=None)
 

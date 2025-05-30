@@ -57,20 +57,27 @@ class ACSController:
         n_iterations: int,
         ants_time: int,
         ants_vehicle: int,
-        lam: float = 0.5
+        lam: float = 0.5,
+        verbose= False
     ) -> Tuple[List[List[Any]], float, int]:
         best_routes: List[List[Any]] = []
         best_dist: float = float('inf')
         best_count: int = float('inf')
 
-        for _ in range(n_iterations):
+        for i in range(1,n_iterations+1):
             # 1) ACS-TIME
             meta_route, dist_time = self.acs_time.iterate(ants_time)
             tau_time = self.acs_time.get_pheromone()
 
+            
+
             # 2) ACS-VEHICLE
             meta_routes, count_vehicle = self.acs_vehicle.iterate(ants_vehicle)
             tau_vehicle = self.acs_vehicle.get_pheromone()
+
+            if verbose:
+                print(f"[Iter {i:>3}] ACS-TIME → dist={dist_time:.1f}, "
+                      f"ACS-VEHICLE → routes={count_vehicle}")
 
             # 3) Mescla global de feromônios
             for edge in self.tau_global:
@@ -81,8 +88,11 @@ class ACSController:
 
             # 4) Atualiza melhor solução
             if (count_vehicle < best_count) or (count_vehicle == best_count and dist_time < best_dist):
-                best_routes = meta_routes if isinstance(meta_routes, list) else [meta_route]
+                best_routes = list(meta_routes)
                 best_count = count_vehicle
                 best_dist = dist_time
+                if verbose:
+                    print(f"   → ** Nova melhor solução: dist={best_dist:.1f}, "
+                          f"rotas={best_count}\n")
 
         return best_routes, best_dist, best_count

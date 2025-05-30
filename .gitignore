@@ -26,3 +26,6 @@ src/rota_aco/aco/__pycache__/acs_vehicle.cpython-312.pyc
 src/rota_aco/aco/__pycache__/controller.cpython-312.pyc
 src/rota_aco/cli/__pycache__/run.cpython-312.pyc
 src/rota_aco/viz/__pycache__/matplotlib_viz.cpython-312.pyc
+src/rota_aco/aco/__pycache__/acs_time.cpython-312.pyc
+src/rota_aco/aco/__pycache__/controller.cpython-312.pyc
+src/rota_aco/cli/__pycache__/run.cpython-312.pyc

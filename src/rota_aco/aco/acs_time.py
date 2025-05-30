@@ -21,10 +21,10 @@ class ACSTime:
         Q: float = 1.0
     ):
         self.graph = graph
-        self.meta_edges = meta_edges      # dicionário (u, v) -> {'length', 'path'}
+        self.meta_edges = meta_edges      
         self.stops = stops
         self.start_node = start_node
-        self.tau = pheromone_matrix       # matriz global compartilhada
+        self.tau = pheromone_matrix       
         self.alpha = alpha
         self.beta = beta
         self.rho = evaporation
