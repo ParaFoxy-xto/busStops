@@ -36,7 +36,10 @@ class ACSVehicle:
             # gera rotas até cobrir todas as paradas
             while remaining:
                 route = resolver_TSP(self.graph, self.start_node)
-                routes.append(route)
+
+                nodes_to_cover = set(remaining) | {self.start_node}
+                subG = self.graph.subgraph(nodes_to_cover).copy()
+                route = resolver_TSP(subG, self.start_node)
                 covered = set(route) & remaining
                 remaining -= covered
             count = len(routes)

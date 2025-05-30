@@ -58,6 +58,13 @@ class Ant:
             n for n in neighbors
             if n not in self.combined_opposites.get(self.current, [])
         ]
+        # --- NOVO: não permita visitar duas paradas vizinhas em sequência ---
+        # só filtra quem é vizinho direto do nó atual
+        orig = neighbors.copy()
+        forbidden = set(graph.successors(self.current)) | set(graph.predecessors(self.current))
+        filtered = [n for n in orig if n not in forbidden]
+        if filtered:
+            neighbors = filtered 
         if not neighbors:
             return None
 

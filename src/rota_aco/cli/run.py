@@ -83,7 +83,6 @@ def cmd_dfs(args):
 def cmd_meta(args):
     """Subcomando META: pipeline completo com ACO"""
     # 1-9: executa exatamente o fluxo de cmd_dfs, retornando:
-    #    G, bus_stops, extra_nodes, reps, meta_edges, candidate_G, opp_prox, opp_acc
     G, bus_stops, extra_nodes, reps,meta_G, meta_edges, candidate_G,opposites_proximity, opposites_access = cmd_dfs(args)
 
     # Garante que o local_search tenha acesso ao meta_edges
@@ -161,7 +160,7 @@ def cmd_meta(args):
         )
 
 def cmd_acs(args):
-    # 1) Carrega grafo e identifica paradas
+# 1) Carrega grafo e identifica paradas
     G = load_graph(args.graph)
     bus_stops = get_bus_stops(G)
 
@@ -181,64 +180,74 @@ def cmd_acs(args):
         extra_nodes=extra
     )
 
-    # # 4) Instancia o controlador ACS multicolônia
-    # print(">>> reps:", reps, type(reps))
-    # print(">>> start:", start, type(start))
-    # print(">>> meta_edges is dict?", isinstance(meta_edges, dict))
-    ctrl = ACSController(
+    # 3.1) Armazena os caminhos reais em meta_edges no próprio grafo
+    meta_G.graph['meta_edges'] = meta_edges
+
+    # 3.2) Prepara o conjunto de meta-nós a cobrir pelo ACO
+    paradas_aco = set(reps)
+    if exit_ is not None:
+        paradas_aco.discard(exit_)
+
+    # 3.3) Combina opostos de proximidade e acesso
+    combined_opposites = {**opposites_proximity}
+    for u, opps in opposites_access.items():
+        combined_opposites.setdefault(u, set()).update(opps)
+    # garante bidirecionalidade
+    for u, opps in list(combined_opposites.items()):
+        for v in opps:
+            combined_opposites.setdefault(v, set()).add(u)
+    combined_opposites = {u: list(v) for u, v in combined_opposites.items()}
+
+    # 4) Executa o ACO puro sobre o meta-grafo
+    from rota_aco.aco.run import executar_aco  # ajuste o import conforme seu projeto
+
+    best_ant = executar_aco(
         graph=meta_G,
-        meta_edges=meta_edges,           
-        stops=reps,
+        stops=paradas_aco,
         start_node=start,
-        alpha=args.alpha,
-        beta=args.beta,
-        evaporation=args.evaporation,
-         Q=args.Q
+        combined_opposites=combined_opposites,
+        n_formigas=args.ants_time,
+        n_iteracoes=args.iterations,
+        max_no_improvement=args.lam,
+        Q=args.Q,
+        evaporacao=args.evaporation
     )
 
-
-
-    # 5) Executa o controller
-    meta_routes, best_dist, best_count = ctrl.run(
-        n_iterations=args.iterations,
-        ants_time=args.ants_time,
-        ants_vehicle=args.ants_vehicle,
-        lam=args.lam,
-        verbose=args.verbose
-    )
+    # 5) Extrai distância e meta-caminho
+    best_dist = best_ant.distancia  # ou best_ant.total_distance, conforme atributo
+    meta_route = best_ant.caminho
 
     print(f"Distância total: {best_dist:.1f}")
-    print(f"Número de rotas: {best_count}")
 
-    # 1) Filtrar opostos
-    filtered_meta = []
-    for rota in meta_routes:
-        rota_f = filter_opposite_meta_route(
-            rota, opposites_proximity, groups
-        )
-        filtered_meta.append(rota_f)
+    # 6) Filtra saltos proibidos no meta-caminho
+    rota_filtrada = filter_opposite_meta_route(
+        meta_route,
+        opposites_proximity,
+        opposites_access
+    )
 
-    # 2) Garantir início e fim corretos
+    # 7) Normaliza início e fim de cada meta-rota
     normalized_meta = []
-    for rota in filtered_meta:
-        # força o início
-        if rota[0] != start:
-            rota.insert(0, start)
-        # corta tudo após exit_node
-        if exit_ in rota:
-            idx = rota.index(exit_)
-            rota = rota[: idx+1]
-        else:
-            rota.append(exit_)
-        normalized_meta.append(rota)
+    rota = rota_filtrada.copy()
+    if rota[0] != start:
+        rota.insert(0, start)
+    if exit_ in rota:
+        idx = rota.index(exit_)
+        rota = rota[: idx+1]
+    else:
+        rota.append(exit_)
+    normalized_meta.append(rota)
 
-    # 3) Expande para sequência completa de nós do grafo original
+    # 8) Expande cada meta-rota em sequência completa de nós reais
     final_routes = [
-        expand_meta_route(rota, meta_G, meta_edges)
-        for rota in normalized_meta
+        expand_meta_route(r, meta_edges)
+        for r in normalized_meta
     ]
 
-    # 4) Plota (só a primeira, ou todas)
+    best_count = len(final_routes)
+    print(f"Número de rotas: {best_count}")
+
+    # 9) Plota cada rota final (gera um PNG para cada)
     if args.output and final_routes:
         for idx, rota in enumerate(final_routes, start=1):
             out = args.output.replace(".png", f"_{idx}.png")
@@ -249,8 +258,8 @@ def cmd_acs(args):
                 out,
                 start_node=start,
                 exit_node=exit_,
-                color=f"C{idx%10}"
-            )
+                color=f"C{idx % 10}"
+        )
 
 
     # 7) Exibe resultados

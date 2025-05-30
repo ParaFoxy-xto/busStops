@@ -101,7 +101,7 @@ python -m rota_aco.cli.run acs graphml/grafo.graphml --start-lat -15.77600000 --
 | CORREIOS L4       | -15.77155556 | -47.86347222 |  
 | POSTINHO L3       | -15.76111111 | -47.87461111 |  
 | ENTRADA CO        | -15.76563889 | -47.85877778 |  
-| BIBLIOTECA (pequeno) | -15.76016667 | -47.86705556 |  
+| FINAL PEQUENO     | -15.76016667 | -47.86705556 |  
 | INÍCIO L2         | -15.77952778 | -47.87400000 |  
 | FIM L2            | -15.74727778 | -47.88222222 |  
 
