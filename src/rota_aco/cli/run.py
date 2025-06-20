@@ -5,12 +5,12 @@ import networkx as nx
 
 from rota_aco.data.preprocess import load_graph, get_bus_stops, pre_process_opposites
 from rota_aco.data.opposites import find_opposites_by_access
-from rota_aco.graph.build_meta import build_meta_graph, expand_meta_route, filter_opposite_meta_route
+from rota_aco.graph.build_meta import build_meta_graph, expand_meta_route, filter_opposite_meta_route, prune_meta_graph_edges
 from rota_aco.graph.dfs_routes import prune_meta_graph, find_k_shortest_paths, filter_paths_remove_opposites
 from rota_aco.graph.route_filter import remove_duplicate_paths, filter_paths_by_length, top_n_paths_per_pair
 from rota_aco.graph.utils import find_nearest_bus_stop, find_edges_between_opposites
 from rota_aco.aco.run import executar_aco
-from rota_aco.viz.matplotlib_viz import plot_meta_graph, plot_meta_route
+from rota_aco.viz.matplotlib_viz import plot_meta_graph, plot_meta_route, plot_multiple_routes
 from rota_aco.viz.folium_viz import visualize_route_folium
 from rota_aco.aco.controller import ACSController
 
@@ -38,7 +38,11 @@ def cmd_dfs(args):
 
     # Build meta-graph
     meta_G, meta_edges, reps, _, _, mapping, groups = build_meta_graph(
-        G, precision=args.precision, extra_nodes=extra_nodes
+        G, 
+        precision=args.precision, 
+        extra_nodes=extra_nodes,
+        start_node=start_node,
+        exit_node=exit_node
     )
     print(f"Meta-grafo: {meta_G.number_of_nodes()} nós, {meta_G.number_of_edges()} arestas")
 
@@ -90,10 +94,13 @@ def cmd_meta(args):
      # start e exit nodes são os nós de entrada e saída do grafo original
     start_node = extra_nodes[0] if extra_nodes else reps[0]
     exit_node  = extra_nodes[1] if len(extra_nodes) > 1 else None
-    # Prepara paradas para o ACO (exclui exit_node)
+    # Prepara paradas para o ACO (exclui start_node e exit_node)
     paradas_aco = set(reps)
+    if start_node is not None:
+        paradas_aco.discard(start_node)
     if exit_node is not None:
         paradas_aco.discard(exit_node)
+    print(f"[DEBUG] Stops with demand (paradas_aco): {sorted(paradas_aco)}")
         
     # Combina opostos de proximidade e de acesso num só dict
     combined_opposites = {}
@@ -120,7 +127,10 @@ def cmd_meta(args):
     evaporacao=args.evaporation
     )
 
-
+    if best_ant is None:
+        print("❌ Nenhuma solução encontrada pelo ACO")
+        return
+        
     meta_route = best_ant.caminho
     # filtra saltos entre paradas opostas no meta-grafo
     meta_route = filter_opposite_meta_route(
@@ -130,14 +140,14 @@ def cmd_meta(args):
     )
     if exit_node is not None:
         meta_route.append(exit_node)
-
     print(f"Melhor rota meta-grafo: {meta_route}")
     # depois de obter meta_G, meta_edges, meta_route...
 
     # Expande a rota final completa
     final_route = expand_meta_route(meta_route, meta_G, meta_edges)
-
     print(f"Rota expandida: {final_route}")
+    uncovered_stops = sorted(set(paradas_aco) - set(final_route))
+    print(f"[DEBUG] Stops NOT covered by this route: {uncovered_stops}")
 
     # 7) Visualização final
     if args.folium:
@@ -160,33 +170,76 @@ def cmd_meta(args):
         )
 
 def cmd_acs(args):
-# 1) Carrega grafo e identifica paradas
-    G = load_graph(args.graph)
+    """
+    Subcomando ACS: executa o ACS multi-colônia (ACS-TIME + ACS-VEHICLE) para múltiplas rotas.
+    Utiliza o ACSController para combinar as duas heurísticas, diferente do ACO clássico (subcomando 'meta').
+    """
+    # 1) Carrega grafo e identifica paradas
+    try:
+        G = load_graph(args.graph)
+    except Exception as e:
+        print(f"Erro ao carregar o grafo: {e}")
+        return
     bus_stops = get_bus_stops(G)
+    if not bus_stops:
+        print("Nenhuma parada de ônibus encontrada no grafo.")
+        return
 
     # 2) Determina nós de início e fim mais próximos
-    start = find_nearest_bus_stop(
-        G, list(G.nodes()), (args.start_lat, args.start_lon)
-    )
-    exit_ = find_nearest_bus_stop(
-        G, list(G.nodes()), (args.exit_lat, args.exit_lon)
-    )
+    try:
+        start = find_nearest_bus_stop(
+            G, list(G.nodes()), (args.start_lat, args.start_lon)
+        )
+        exit_ = find_nearest_bus_stop(
+            G, list(G.nodes()), (args.exit_lat, args.exit_lon)
+        )
+    except Exception as e:
+        print(f"Erro ao determinar nós de início/fim: {e}")
+        return
     extra = [start, exit_]
 
     # 3) Constrói meta-grafo
-    meta_G, meta_edges, reps, opposites_proximity, opposites_access, mapping, groups = build_meta_graph(
-        G,
-        precision=args.precision,
-        extra_nodes=extra
-    )
+    try:
+        meta_G, meta_edges, reps, opposites_proximity, opposites_access, mapping, groups = build_meta_graph(
+            G,
+            precision=args.precision,
+            extra_nodes=extra,
+            start_node=start,
+            exit_node=exit_
+        )
+        # Prune meta-graph edges to remove long detours
+        meta_G, meta_edges = prune_meta_graph_edges(meta_G, meta_edges, factor=2.0)
+    except Exception as e:
+        print(f"Erro ao construir o meta-grafo: {e}")
+        return
 
-    # 3.1) Armazena os caminhos reais em meta_edges no próprio grafo
+    if meta_G.number_of_nodes() == 0 or meta_G.number_of_edges() == 0:
+        print("Meta-grafo vazio. Verifique os parâmetros de entrada.")
+        return
+
+    # Plot meta-graph if requested
+    if args.meta_output:
+        try:
+            plot_meta_graph(
+                G, meta_G,
+                start_node=start,
+                exit_node=exit_,
+                show_labels=args.show_labels,
+                output=args.meta_output
+            )
+            print(f"Meta-grafo salvo em: {args.meta_output}")
+        except Exception as e:
+            print(f"Erro ao plotar meta-grafo: {e}")
+
     meta_G.graph['meta_edges'] = meta_edges
 
     # 3.2) Prepara o conjunto de meta-nós a cobrir pelo ACO
     paradas_aco = set(reps)
+    if start is not None:
+        paradas_aco.discard(start)
     if exit_ is not None:
         paradas_aco.discard(exit_)
+    print(f"[DEBUG] Stops with demand (paradas_aco): {sorted(paradas_aco)}")
 
     # 3.3) Combina opostos de proximidade e acesso
     combined_opposites = {**opposites_proximity}
@@ -198,77 +251,103 @@ def cmd_acs(args):
             combined_opposites.setdefault(v, set()).add(u)
     combined_opposites = {u: list(v) for u, v in combined_opposites.items()}
 
-    # 4) Executa o ACO puro sobre o meta-grafo
-    from rota_aco.aco.run import executar_aco  # ajuste o import conforme seu projeto
+    # 4) Executa o ACS multi-colônia
+    try:
+        controller = ACSController(
+            graph=meta_G,
+            meta_edges=meta_edges,
+            stops=list(paradas_aco),
+            start_node=start,
+            alpha=args.alpha,
+            beta=args.beta,
+            evaporation=args.evaporation,
+            Q=args.Q,
+            opposites=combined_opposites,
+            exit_node=exit_
+        )
+        best_routes, best_dist, best_count, route_directions, coverage_percentage, uncovered_stops = controller.run(
+            n_iterations=args.iterations,
+            n_ants=args.ants,
+            lam=args.lam,
+            verbose=args.verbose
+        )
+    except Exception as e:
+        print(f"Erro ao executar o ACSController: {e}")
+        return
 
-    best_ant = executar_aco(
-        graph=meta_G,
-        stops=paradas_aco,
-        start_node=start,
-        combined_opposites=combined_opposites,
-        n_formigas=args.ants_time,
-        n_iteracoes=args.iterations,
-        max_no_improvement=args.lam,
-        Q=args.Q,
-        evaporacao=args.evaporation
-    )
+    print(f"\nMelhor conjunto de rotas encontradas pelo ACS multi-colônia:")
+    all_covered = set()
+    for i, (route, direction) in enumerate(zip(best_routes, route_directions), 1):
+        print(f"  Rota {i} ({direction}): {route}")
+        all_covered.update(stop for stop in route if stop in paradas_aco)
+    not_covered = sorted(set(paradas_aco) - all_covered)
+    print(f"[DEBUG] Stops NOT covered by any route: {not_covered}")
+    print(f"Distância total: {best_dist:.2f}")
+    print(f"Número de rotas: {best_count}")
+    print(f"Cobertura: {coverage_percentage:.1f}% dos passageiros atendidos")
+    if uncovered_stops:
+        print(f"Paradas não atendidas ({len(uncovered_stops)}): {uncovered_stops}")
 
-    # 5) Extrai distância e meta-caminho
-    best_dist = best_ant.distancia  # ou best_ant.total_distance, conforme atributo
-    meta_route = best_ant.caminho
-
-    print(f"Distância total: {best_dist:.1f}")
-
-    # 6) Filtra saltos proibidos no meta-caminho
-    rota_filtrada = filter_opposite_meta_route(
-        meta_route,
-        opposites_proximity,
-        opposites_access
-    )
-
-    # 7) Normaliza início e fim de cada meta-rota
-    normalized_meta = []
-    rota = rota_filtrada.copy()
-    if rota[0] != start:
-        rota.insert(0, start)
-    if exit_ in rota:
-        idx = rota.index(exit_)
-        rota = rota[: idx+1]
-    else:
-        rota.append(exit_)
-    normalized_meta.append(rota)
-
-    # 8) Expande cada meta-rota em sequência completa de nós reais
+    # 5) Expande cada meta-rota em sequência completa de nós reais
     final_routes = [
-        expand_meta_route(r, meta_edges)
-        for r in normalized_meta
+        expand_meta_route(r, meta_G, meta_edges)
+        for r in best_routes
     ]
 
-    best_count = len(final_routes)
-    print(f"Número de rotas: {best_count}")
+    bus_stop_set = set(bus_stops)
+    # Filter out routes that serve 0 bus stops
+    filtered_routes = []
+    filtered_directions = []
+    for route, direction in zip(final_routes, route_directions):
+        stops_in_route = set(route) & bus_stop_set
+        # Remove start and exit nodes if present
+        stops_in_route.discard(start)
+        stops_in_route.discard(exit_)
+        if len(stops_in_route) > 0:
+            filtered_routes.append(route)
+            filtered_directions.append(direction)
 
-    # 9) Plota cada rota final (gera um PNG para cada)
-    if args.output and final_routes:
-        for idx, rota in enumerate(final_routes, start=1):
+    # Print number of unique bus stops accessed by each route
+    for idx, (rota, direction) in enumerate(zip(filtered_routes, filtered_directions), start=1):
+        stops_in_route = set(rota) & bus_stop_set
+        stops_in_route.discard(start)
+        stops_in_route.discard(exit_)
+        print(f"Rota {idx} ({direction}): acessa {len(stops_in_route)} paradas de ônibus")
+
+    # Warn if more than 2 routes are generated
+    if len(filtered_routes) > 2:
+        print(f"[WARNING] {len(filtered_routes)} rotas geradas. Isso pode indicar um problema com a lógica do ACS.")
+
+    # 6) Plota cada rota final (gera um PNG para cada)
+    if args.output and filtered_routes:
+        for idx, rota in enumerate(filtered_routes, start=1):
             out = args.output.replace(".png", f"_{idx}.png")
-            plot_meta_route(
+            try:
+                plot_meta_route(
+                    G,
+                    rota,
+                    bus_stops,
+                    out,
+                    start_node=start,
+                    exit_node=exit_,
+                    color=f"C{idx % 10}"
+                )
+            except Exception as e:
+                print(f"Erro ao plotar rota {idx}: {e}")
+
+    # 7) Visualização interativa (opcional)
+    if args.output and args.folium and filtered_routes:
+        try:
+            visualize_route_folium(
                 G,
-                rota,
+                filtered_routes,  # Only valid routes
                 bus_stops,
-                out,
+                args.output.replace(".png", ".html"),
                 start_node=start,
-                exit_node=exit_,
-                color=f"C{idx % 10}"
-        )
-
-
-    # 7) Exibe resultados
-    #print("Melhor conjunto de rotas (expandido):")
-    #for i, route in enumerate(final_routes, 1):
-    #    print(f"  Rota {i}: {route}")
-    #print(f"Distância total: {best_dist}")
-    #print(f"Número de rotas: {best_count}\n")
-    
+                exit_node=exit_
+            )
+        except Exception as e:
+            print(f"Erro ao gerar visualização folium: {e}")
 
 
 def main():
@@ -317,7 +396,7 @@ def main():
     # Subcomando acs: executa o ACS multi-colônia
     p_acs = sub.add_parser(
         "acs",
-        help="Execute o ACS-TIME + ACS-VEHICLE para múltiplas rotas"
+        help="Execute o ACS multi-rota para múltiplas rotas"
     )
     p_acs.add_argument("graph", help="Caminho para o GraphML")
     p_acs.add_argument("--precision", "-p", type=int, default=6,
@@ -330,18 +409,16 @@ def main():
                        help="Latitude do ponto final")
     p_acs.add_argument("--exit-lon",   type=float, required=True,
                        help="Longitude do ponto final")
-    p_acs.add_argument("--ants-time",    type=int,   default=10,
-                       help="Número de formigas ACS-TIME")
-    p_acs.add_argument("--ants-vehicle", type=int,   default=10,
-                       help="Número de formigas ACS-VEHICLE")
+    p_acs.add_argument("-a", "--ants", type=int, default=10,
+                       help="Número de formigas por iteração")
     p_acs.add_argument("--iterations",   type=int,   default=100,
                        help="Número de iterações do controlador")
     p_acs.add_argument("--lambda",       type=float, dest="lam", default=0.5,
                        help="Peso de combinação dos feromônios (0..1)")
     p_acs.add_argument("--alpha",        type=float, default=1.0,
-                       help="Parâmetro α para ACS-TIME")
-    p_acs.add_argument("--beta",         type=float, default=2.0,
-                       help="Parâmetro β para ACS-TIME")
+                       help="Parâmetro α para ACS")
+    p_acs.add_argument("--beta",         type=float, default=4.0,
+                       help="Parâmetro β para ACS (heurística, use 4.0 ou mais para rotas mais diretas)")
     p_acs.add_argument("--evaporation",  type=float, default=0.1,
                        help="Taxa de evaporação global")
     p_acs.add_argument("--pheromone-q",  type=float, dest="Q", default=1.0,
@@ -350,7 +427,9 @@ def main():
                        help="Exibe logs detalhados de cada iteração do ACS")
     p_acs.add_argument("--output", "-o",
         help="Arquivo PNG para salvar a rota ACS", default=None)
-
+    p_acs.add_argument('--folium', action='store_true', help='Gera visualização folium interativa')
+    p_acs.add_argument('--meta-output', help='Arquivo PNG para salvar o meta-grafo', default=None)
+    p_acs.add_argument('--show-labels', action='store_true', help='Mostra labels dos nós no meta-grafo')
     p_acs.set_defaults(func=cmd_acs)
 
 

@@ -40,10 +40,10 @@ class Ant:
         Constrói a solução no grafo compacto de rotas candidatas.
         Usa fórmula de probabilidade baseada em feromônio e heurística (1/distância).
         """
-        current = self.start
-        remaining = set(self.paradas) - {current}
+        current = self.start_node
+        remaining = set(self.stops) - {current}
         while remaining:
-            next_node = self._choose_next(graph, pheromones, current, remaining)
+            next_node = self._choose_next(graph, pheromones)
             if next_node is None:
                 break
             self.caminho.append(next_node)
