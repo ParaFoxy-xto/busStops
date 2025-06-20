@@ -27,7 +27,7 @@ rota_aco/
 │       └── cli/           # interface de linha de comando (meta, dfs, acs)
 ├── graphml/               # grafos de entrada (.graphml)
 ├── tests/                 # testes unitários
-├── output/                # Saida dos PNG, Html e plots de convergência
+├── output/                # Saída dos PNG, Html e plots de convergência
 ├── requirements.txt
 └── README.md
 ```
