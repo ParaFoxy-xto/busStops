@@ -1,37 +1,57 @@
-import osmnx as ox
-import networkx as nx
+# src/rota_aco/data/preprocess.py
 
+"""
+Funções para carregamento e pré-processamento de dados do grafo.
+
+Este módulo é responsável por interagir com os arquivos de dados brutos
+(como GraphML) e extrair informações básicas necessárias para as etapas
+seguintes do pipeline, como a lista de nós que são paradas de ônibus.
+"""
+
+from typing import Any, List
+
+import networkx as nx
+import osmnx as ox
 
 def load_graph(graph_path: str) -> nx.MultiDiGraph:
     """
-    Carrega o grafo original a partir de um arquivo GraphML.
-    """
-    G = ox.load_graphml(graph_path)
-    return G
+    Carrega um grafo a partir de um arquivo GraphML.
 
+    Args:
+        graph_path: O caminho para o arquivo .graphml.
 
-def get_bus_stops(G: nx.MultiDiGraph) -> list:
+    Returns:
+        Um objeto de grafo NetworkX (MultiDiGraph).
+    
+    Raises:
+        FileNotFoundError: Se o arquivo especificado não for encontrado.
     """
-    Retorna a lista de nós que representam paradas de ônibus, com base no atributo 'bus_stop'.
-    """
-    return [n for n, data in G.nodes(data=True)
-            if data.get('bus_stop', '').strip().lower() == 'true']
+    try:
+        graph = ox.load_graphml(graph_path)
+        print(f"Grafo '{graph_path}' carregado com sucesso. Nós: {len(graph.nodes)}, Arestas: {len(graph.edges)}")
+        return graph
+    except FileNotFoundError:
+        print(f"[ERRO] Arquivo de grafo não encontrado em: '{graph_path}'")
+        raise
 
-
-def pre_process_opposites(bus_stops: list, G: nx.MultiDiGraph, precision: int = 4) -> dict:
+def get_bus_stops(graph: nx.MultiDiGraph) -> List[Any]:
     """
-    Agrupa as paradas por coordenadas arredondadas e identifica opostos (mesma localização).
-    Retorna um dicionário mapping de cada parada para lista de suas opostas.
-    """
-    groups = {}
-    for stop in bus_stops:
-        data = G.nodes[stop]
-        key = (round(float(data['x']), precision), round(float(data['y']), precision))
-        groups.setdefault(key, []).append(stop)
+    Extrai todos os nós do grafo que são designados como paradas de ônibus.
 
-    opposites = {}
-    for stops in groups.values():
-        if len(stops) > 1:
-            for s in stops:
-                opposites[s] = [o for o in stops if o != s]
-    return opposites
+    A verificação é feita pelo atributo 'bus_stop' com valor 'true'.
+
+    Args:
+        graph: O grafo da rede de ruas.
+
+    Returns:
+        Uma lista contendo os IDs dos nós das paradas de ônibus.
+    """
+    bus_stops = [
+        node for node, data in graph.nodes(data=True)
+        if str(data.get('bus_stop', '')).strip().lower() == 'true'
+    ]
+    
+    if not bus_stops:
+        print("[AVISO] Nenhuma parada de ônibus com o atributo 'bus_stop=true' foi encontrada no grafo.")
+    
+    return bus_stops

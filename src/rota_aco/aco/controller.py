@@ -1,201 +1,171 @@
 # src/rota_aco/aco/controller.py
+
 """
-Controlador que orquestra as colônias ACSTime e ACSVehicle,
-mantendo uma matriz global de feromônios compartilhada.
+Controlador do sistema multi-colônia de formigas (ACS).
+
+Este módulo orquestra a interação entre diferentes colônias de formigas
+(ACSTime e ACSVehicle), gerencia a tabela de feromônios compartilhada e
+dirige o processo de otimização geral.
 """
 import networkx as nx
 from typing import List, Any, Dict, Tuple, Optional
+
 from rota_aco.aco.acs_time import ACSTime
 from rota_aco.aco.acs_vehicle import ACSVehicle
-import csv
-import statistics
-
-def route_has_opposite_violation(route: List[Any], opposites: Dict[Any, List[Any]]) -> bool:
-    """Check if a route violates the opposite stops constraint."""
-    for i, stop in enumerate(route):
-        if stop in opposites:
-            for opposite in opposites[stop]:
-                if opposite in route[i+1:]:
-                    return True
-    return False
-
-
-def route_serves_new_stops(route: List[Any], stops: List[Any], already_served_stops: set) -> bool:
-    """Check if a route serves any new stops that haven't been served before."""
-    route_stops = set(stop for stop in route if stop in stops)
-    return len(route_stops - already_served_stops) > 0
-
 
 class ACSController:
+    """
+    Orquestra múltiplas colônias de formigas para encontrar uma solução de roteamento
+    balanceada, avaliando as propostas de cada colônia em relação a uma função
+    de qualidade global.
+    """
     def __init__(
         self,
         graph: nx.DiGraph,
         meta_edges: Dict[Tuple[Any, Any], dict],
-        stops: List[Any],
+        stops_to_visit: List[Any],
         start_node: Any,
-        alpha: float = 1.0,
-        beta: float = 2.0,
-        evaporation: float = 0.1,
-        Q: float = 1.0,
-        opposites: Optional[Dict[Any, List[Any]]] = None,
-        exit_node: Any = None
+        exit_node: Any,
+        opposites: Dict[Any, List[Any]],
+        aco_params: Dict[str, Any],
+        problem_params: Dict[str, Any],
     ):
+        # Parâmetros do problema
         self.graph = graph
         self.meta_edges = meta_edges
-        self.stops = stops
+        self.stops_to_visit = stops_to_visit
         self.start_node = start_node
-        self.rho_global = evaporation
-        self.alpha = alpha
-        self.beta = beta
-        self.Q = Q
-        if opposites is None:
-            opposites = {}
-        self.opposites = opposites
         self.exit_node = exit_node
-        # inicia tau_global apenas para arestas válidas em meta_edges
-        self.tau_global: Dict[Tuple[Any, Any], float] = {
+        self.opposites = opposites
+        self.capacity = problem_params.get('capacity', 70)
+        self.max_route_attempts = problem_params.get('max_route_attempts', 10)
+        self.max_route_length = problem_params.get('max_route_length', 100)
+
+        # Parâmetros do algoritmo ACO
+        self.alpha = aco_params.get('alpha', 1.0)
+        self.beta = aco_params.get('beta', 2.0)
+        self.rho = aco_params.get('rho', 0.1)  # Taxa de evaporação
+        self.q_param = aco_params.get('Q', 1.0) # Fator de reforço de feromônio
+        
+        # Tabela de feromônios compartilhada
+        self.pheromones: Dict[Tuple[Any, Any], float] = {
             edge: 1.0 for edge in meta_edges.keys()
         }
+        
+        # Histórico para análise de convergência
+        self.history: List[Dict[str, Any]] = []
 
     def run(
         self,
-        n_iterations: int,
         n_ants: int,
-        lam: float = 0.5,
-        verbose=False
-    ) -> Tuple[List[List[Any]], float, int, List[str], float, List[Any]]:
-        import random
-        best_routes: List[List[Any]] = []
-        best_count: float = float('inf')
-        best_total_time: float = float('inf')
-        best_route_directions: List[str] = []
-        best_coverage: float = 0.0
-        best_uncovered: List[Any] = []
-        best_solution = None
+        n_iterations: int,
+        quality_weights: Dict[str, float],
+        verbose: bool = False
+    ) -> Tuple[List[List[Any]], float, int, float]:
+        """
+        Executa o loop de otimização principal do ACS multi-colônia.
+        """
+        w_c = quality_weights.get('w_c', 10.0)
+        w_r = quality_weights.get('w_r', 1.0)
+        w_d = quality_weights.get('w_d', 0.5)
 
-        v = 1
-        max_vehicles = max(1, len(self.stops) // 3)
-        tau_global = {k: 1.0 for k in self.meta_edges}
-        # --- Detailed convergence logging ---
-        convergence_log = []
-        while v <= max_vehicles:
-            # --- ACS-VEI: Try to maximize coverage with v routes ---
-            acs_vei = ACSVehicle(
-                self.graph,
-                self.meta_edges,
-                self.stops,
-                self.start_node,
-                tau_global,
-                self.rho_global,
-                self.Q,
-                self.opposites,
-                self.exit_node
-            )
-            vei_routes, vei_count = acs_vei.iterate(n_ants)
-            vei_covered = set()
-            for route in vei_routes:
-                vei_covered.update(stop for stop in route if stop in self.stops)
-            vei_coverage = 100.0 * len(vei_covered) / max(1, len(self.stops))
-            vei_uncovered = sorted(set(self.stops) - vei_covered)
-            vei_total_time = 0.0
-            for route in vei_routes:
-                for u, v_ in zip(route, route[1:]):
-                    if (u, v_) in self.meta_edges:
-                        vei_total_time += self.meta_edges[(u, v_)]['time']
-            # Log ACSVehicle phase
-            pheromone_vals_vei = list(tau_global.values())
-            convergence_log.append({
-                'v': v,
-                'phase': 'ACSVehicle',
-                'coverage': vei_coverage,
-                'total_time': vei_total_time,
-                'count': vei_count,
-                'uncovered_stops': len(vei_uncovered),
-                'reason_for_switch': 'coverage<99.9' if vei_coverage < 99.9 else 'coverage>=99.9',
-                'delta_time': '',
-                'delta_coverage': '',
-                'improvement_found': '',
-                'pheromone_mean': statistics.mean(pheromone_vals_vei) if pheromone_vals_vei else 0.0,
-                'pheromone_min': min(pheromone_vals_vei) if pheromone_vals_vei else 0.0,
-                'pheromone_max': max(pheromone_vals_vei) if pheromone_vals_vei else 0.0
-            })
-            if vei_coverage < 99.9:
-                v += 1
-                continue
-            # --- ACS-TIME: For v routes, minimize total time, starting from VEI solution ---
-            acs_time = ACSTime(
-                self.graph,
-                self.meta_edges,
-                self.stops,
-                self.start_node,
-                tau_global,
-                self.alpha,
-                self.beta,
-                self.rho_global,
-                self.Q,
-                self.opposites,
-                self.exit_node
-            )
-            time_routes, time_count = acs_time.iterate(n_ants, initial_routes=vei_routes)
-            time_covered = set()
-            total_time = 0.0
-            for route in time_routes:
-                time_covered.update(stop for stop in route if stop in self.stops)
-                for u, v_ in zip(route, route[1:]):
-                    if (u, v_) in self.meta_edges:
-                        total_time += self.meta_edges[(u, v_)]['time']
-            time_coverage = 100.0 * len(time_covered) / max(1, len(self.stops))
-            time_uncovered = sorted(set(self.stops) - time_covered)
-            # Calculate improvements
-            delta_time = total_time - vei_total_time
-            delta_coverage = time_coverage - vei_coverage
-            improvement_found = (delta_time < 0 or delta_coverage > 0)
-            # Log ACSTime phase
-            pheromone_vals_time = list(tau_global.values())
-            convergence_log.append({
-                'v': v,
-                'phase': 'ACSTime',
-                'coverage': time_coverage,
-                'total_time': total_time,
-                'count': time_count,
-                'uncovered_stops': len(time_uncovered),
-                'reason_for_switch': 'ACSTime phase',
-                'delta_time': delta_time,
-                'delta_coverage': delta_coverage,
-                'improvement_found': improvement_found,
-                'pheromone_mean': statistics.mean(pheromone_vals_time) if pheromone_vals_time else 0.0,
-                'pheromone_min': min(pheromone_vals_time) if pheromone_vals_time else 0.0,
-                'pheromone_max': max(pheromone_vals_time) if pheromone_vals_time else 0.0
-            })
-            # Only update best if this is a full, coherent solution
-            if time_coverage > best_coverage or (time_coverage == best_coverage and total_time < best_total_time):
-                best_routes = time_routes
-                best_count = time_count
-                best_total_time = total_time
-                best_coverage = time_coverage
-                best_uncovered = time_uncovered
-                best_solution = (best_routes, best_total_time, best_count, best_coverage, best_uncovered)
-                # Update global pheromone matrix based on best solution
-            for route in best_routes:
-                    for u, v_ in zip(route, route[1:]):
-                        if (u, v_) in tau_global:
-                            tau_global[(u, v_)] += self.Q / max(1, best_count)
-            v += 1
-        # --- Save detailed convergence log to CSV ---
-        try:
-            with open('output/controller_convergence_detailed.csv', 'w', newline='') as f:
-                writer = csv.DictWriter(f, fieldnames=[
-                    'v', 'phase', 'coverage', 'total_time', 'count', 'uncovered_stops',
-                    'reason_for_switch', 'delta_time', 'delta_coverage', 'improvement_found',
-                    'pheromone_mean', 'pheromone_min', 'pheromone_max'])
-                writer.writeheader()
-                for row in convergence_log:
-                    writer.writerow(row)
-        except Exception as e:
+        common_args = {
+            'graph': self.graph, 'meta_edges': self.meta_edges, 'stops_to_visit': self.stops_to_visit,
+            'start_node': self.start_node, 'exit_node': self.exit_node, 'opposites': self.opposites,
+            'pheromones': self.pheromones, 'alpha': self.alpha, 'beta': self.beta, 'capacity': self.capacity,
+            'max_route_attempts': self.max_route_attempts, 'verbose': verbose
+        }
+        
+        acs_time = ACSTime(**common_args)
+        acs_vehicle = ACSVehicle(**common_args, max_route_length=self.max_route_length)
+
+        best_solution_so_far: List[List[Any]] = []
+        best_quality_so_far: float = -float('inf')
+        no_improvement_streak = 0
+        
+        for iteration_num in range(n_iterations): # Mudei para iteration_num para clareza
+            time_solution, _, _, _ = acs_time.iterate(n_ants)
+            vehicle_solution, _, _, _ = acs_vehicle.iterate(n_ants)
+            
+            quality_time = self._calculate_solution_quality(time_solution, w_c, w_r, w_d)
+            quality_vehicle = self._calculate_solution_quality(vehicle_solution, w_c, w_r, w_d)
+            
+            current_best_solution = time_solution if quality_time >= quality_vehicle else vehicle_solution
+            current_best_quality = max(quality_time, quality_vehicle)
+            
+            if current_best_quality > best_quality_so_far:
+                best_solution_so_far = current_best_solution
+                best_quality_so_far = current_best_quality
+                no_improvement_streak = 0
+                if verbose:
+                    print(f"[CONTROLLER Iter {iteration_num+1}] Nova melhor solução global! Qualidade: {best_quality_so_far:.4f}")
+            else:
+                no_improvement_streak += 1
+
             if verbose:
-                print(f"[WARNING] Could not write detailed convergence log: {e}")
-        if best_solution is None:
-            return [], float('inf'), 0, [], 0.0, []
-        best_routes, best_total_time, best_count, best_coverage, best_uncovered = best_solution
-        best_route_directions = ["FORWARD"] * best_count
-        return best_routes, best_total_time, best_count, best_route_directions, best_coverage, best_uncovered
+                print(f"[CONTROLLER Iter {iteration_num+1}] Melhor global: {best_quality_so_far:.4f}")
+
+            self._update_pheromones(best_solution_so_far, best_quality_so_far)
+
+            # --- CORREÇÃO APLICADA AQUI ---
+            # Grava o histórico detalhado da iteração com dados de ambas as colônias
+            self._record_history(
+                iteration_num=iteration_num,
+                time_solution=time_solution,
+                vehicle_solution=vehicle_solution,
+                chosen_solution_quality=current_best_quality,
+                best_overall_quality=best_quality_so_far,
+            )
+
+            if no_improvement_streak >= 5 and iteration_num > (n_iterations / 2):
+                if verbose: print("\n[CONTROLLER] Estagnação detectada. Encerrando otimização.")
+                break
+
+        final_dist, final_count, final_coverage = self._get_solution_metrics(best_solution_so_far)
+        return best_solution_so_far, final_dist, final_count, final_coverage
+
+    def _calculate_solution_quality(self, routes: List[List[Any]], w_c: float, w_r: float, w_d: float) -> float:
+        if not routes: return -float('inf')
+        dist, count, coverage = self._get_solution_metrics(routes)
+        normalized_dist_penalty = dist / (1 + dist)
+        quality = (w_c * coverage) - (w_r * count) - (w_d * normalized_dist_penalty)
+        return quality
+
+    def _update_pheromones(self, routes: List[List[Any]], quality: float):
+        for edge in self.pheromones:
+            self.pheromones[edge] *= (1 - self.rho)
+        if not routes or quality <= 0: return
+        reinforcement_amount = self.q_param * quality
+        for route in routes:
+            for u, v in zip(route, route[1:]):
+                if (u, v) in self.pheromones:
+                    self.pheromones[(u, v)] += reinforcement_amount
+
+    def _get_solution_metrics(self, routes: List[List[Any]]) -> Tuple[float, int, float]:
+        if not routes: return 0.0, 0, 0.0
+        total_dist = sum(self.meta_edges.get((u, v), {}).get('time', 0) for r in routes for u, v in zip(r, r[1:]))
+        num_routes = len(routes)
+        covered_stops = {s for r in routes for s in r if s in self.stops_to_visit}
+        coverage = len(covered_stops) / max(1, len(self.stops_to_visit)) if self.stops_to_visit else 1.0
+        return total_dist, num_routes, coverage
+
+    
+    def _record_history(
+        self,
+        iteration_num: int,
+        time_solution: List[List[Any]],
+        vehicle_solution: List[List[Any]],
+        chosen_solution_quality: float,
+        best_overall_quality: float,
+    ):
+        """Salva as métricas da iteração atual para ambas as colônias."""
+        time_dist, time_count, time_coverage = self._get_solution_metrics(time_solution)
+        vehicle_dist, vehicle_count, vehicle_coverage = self._get_solution_metrics(vehicle_solution)
+
+        self.history.append({
+            'iteration': iteration_num,
+            'time_metrics': {'dist': time_dist, 'count': time_count, 'coverage': time_coverage},
+            'vehicle_metrics': {'dist': vehicle_dist, 'count': vehicle_count, 'coverage': vehicle_coverage},
+            'chosen_quality': chosen_solution_quality,
+            'best_quality_so_far': best_overall_quality
+        })

@@ -1,81 +1,97 @@
-# viz/folium_viz.py
+# src/rota_aco/viz/folium_viz.py
+
+"""
+Funções para gerar visualizações de rotas interativas usando a biblioteca Folium.
+"""
+
+from typing import Any, List, Optional, Union
 
 import folium
-from folium import Map, PolyLine, CircleMarker, Popup, Icon, DivIcon, Marker
-from typing import Any, List, Optional
-import itertools
+import networkx as nx
+from folium import Map, PolyLine, CircleMarker
 
-
-def visualize_route_folium(
-    G,
-    routes,
-    bus_stops: List[Any],
+def visualize_routes_folium(
+    graph: nx.MultiDiGraph,
+    routes: Union[List[Any], List[List[Any]]],
+    all_bus_stops: List[Any],
     output_path: str,
     start_node: Optional[Any] = None,
     exit_node: Optional[Any] = None
 ) -> None:
     """
-    Gera um mapa interativo com Folium para uma ou várias rotas:
-    - marca paradas, traça todas as rotas e destaca start/exit em verde
-    - mostra IDs das paradas de ônibus
+    Gera um mapa HTML interativo com uma ou mais rotas.
+
+    Args:
+        graph: O grafo original com dados de coordenadas dos nós.
+        routes: Uma única rota (lista de nós) ou uma lista de rotas.
+        all_bus_stops: Lista de todos os nós de parada de ônibus para marcar no mapa.
+        output_path: Caminho para salvar o arquivo HTML do mapa.
+        start_node: O nó de partida a ser destacado.
+        exit_node: O nó de chegada a ser destacado.
     """
-    # Permitir tanto uma rota única quanto uma lista de rotas
-    if isinstance(routes[0], (str, int)):
+    # Garante que 'routes' seja sempre uma lista de listas
+    if not routes or not isinstance(routes[0], list):
         routes = [routes]
-    # Centro do mapa baseado na primeira rota
-    lats = [float(G.nodes[n]['y']) for n in routes[0]]
-    lngs = [float(G.nodes[n]['x']) for n in routes[0]]
-    center = (sum(lats)/len(lats), sum(lngs)/len(lngs))
 
-    m = Map(location=center, zoom_start=14, tiles='Cartodb Positron')
+    # Centraliza o mapa com base na primeira rota
+    try:
+        first_route_nodes = routes[0]
+        lats = [float(graph.nodes[n]['y']) for n in first_route_nodes]
+        lons = [float(graph.nodes[n]['x']) for n in first_route_nodes]
+        map_center = (sum(lats) / len(lats), sum(lons) / len(lons))
+    except (IndexError, KeyError, ZeroDivisionError):
+        # Fallback se a rota estiver vazia ou os nós não tiverem coordenadas
+        map_center = (-15.77, -47.87) # Coordenadas de fallback (ex: Brasília)
 
-    # Cores para múltiplas rotas
-    color_cycle = itertools.cycle([
-        'red', 'blue', 'green', 'purple', 'orange', 'darkred', 'lightred',
-        'beige', 'darkblue', 'darkgreen', 'cadetblue', 'darkpurple',
-        'white', 'pink', 'lightblue', 'lightgreen', 'gray', 'black', 'lightgray'
-    ])
+    # Cria o mapa base
+    m = Map(location=map_center, zoom_start=14, tiles='CartoDB positron')
 
-    # Desenha todas as rotas
-    for route in routes:
-        lats = [float(G.nodes[n]['y']) for n in route]
-        lngs = [float(G.nodes[n]['x']) for n in route]
-        coords = list(zip(lats, lngs))
-        color = next(color_cycle)
-        PolyLine(locations=coords, color=color, weight=5, opacity=0.8).add_to(m)
+    # Define um ciclo de cores para as rotas
+    colors = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33', '#a65628', '#f781bf']
 
-    # Marca paradas de ônibus com IDs
-    for n in bus_stops:
-        lat, lon = float(G.nodes[n]['y']), float(G.nodes[n]['x'])
-        # Add bus stop marker with ID popup (hover only)
-        CircleMarker(
-            location=(lat, lon), 
-            radius=3, 
-            color='blue', 
-            fill=True,
-            popup=f'Bus Stop ID: {n}'
+    # 1. Desenha cada rota
+    for i, route in enumerate(routes):
+        if not route: continue
+        route_coords = [(graph.nodes[n]['y'], graph.nodes[n]['x']) for n in route if n in graph.nodes]
+        PolyLine(
+            locations=route_coords,
+            color=colors[i % len(colors)],
+            weight=5,
+            opacity=0.8,
+            tooltip=f"Rota {i+1}"
         ).add_to(m)
 
-    # Destaca start em verde com ID
-    if start_node is not None:
-        lat0, lon0 = float(G.nodes[start_node]['y']), float(G.nodes[start_node]['x'])
-        CircleMarker(
-            location=(lat0, lon0), 
-            radius=6, 
-            color='green', 
-            fill=True, 
-            popup=f'Start - ID: {start_node}'
+    # 2. Marca todas as paradas de ônibus
+    for stop in all_bus_stops:
+        if stop in graph.nodes:
+            lat, lon = graph.nodes[stop]['y'], graph.nodes[stop]['x']
+            CircleMarker(
+                location=(lat, lon),
+                radius=4,
+                color='#0033cc', # Azul escuro
+                fill=True,
+                fill_color='#aaccff',
+                fill_opacity=0.7,
+                tooltip=f"Parada: {stop}"
+            ).add_to(m)
+
+    # 3. Destaca o nó de partida
+    if start_node and start_node in graph.nodes:
+        lat, lon = graph.nodes[start_node]['y'], graph.nodes[start_node]['x']
+        folium.Marker(
+            location=(lat, lon),
+            tooltip=f"Partida: {start_node}",
+            icon=folium.Icon(color='green', icon='play')
         ).add_to(m)
-        
-    # Destaca exit em verde com ID
-    if exit_node is not None:
-        lat1, lon1 = float(G.nodes[exit_node]['y']), float(G.nodes[exit_node]['x'])
-        CircleMarker(
-            location=(lat1, lon1), 
-            radius=6, 
-            color='green', 
-            fill=True, 
-            popup=f'Exit - ID: {exit_node}'
+
+    # 4. Destaca o nó de chegada
+    if exit_node and exit_node in graph.nodes:
+        lat, lon = graph.nodes[exit_node]['y'], graph.nodes[exit_node]['x']
+        folium.Marker(
+            location=(lat, lon),
+            tooltip=f"Chegada: {exit_node}",
+            icon=folium.Icon(color='red', icon='stop')
         ).add_to(m)
 
     m.save(output_path)
+    print(f"Mapa interativo salvo em: '{output_path}'")

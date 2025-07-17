@@ -1,328 +1,235 @@
 # src/rota_aco/aco/acs_time.py
+
 """
-Colônia ACS focada na minimização da distância total.
-Cada formiga faz um TSP simples no meta-grafo cobrindo todas as paradas.
+Implementação da colônia de formigas ACSTime.
+
+Esta colônia foca na minimização do tempo (ou distância) total das rotas.
+Cada formiga constrói uma solução completa (um conjunto de rotas) que tenta
+cobrir todas as paradas necessárias.
 """
 import networkx as nx
-from typing import List, Any, Dict, Tuple, Optional
-from rota_aco.aco.acs_vehicle import route_has_opposite_violation
+from typing import List, Any, Dict, Tuple, Set, Optional
+
+from rota_aco.aco.utils import (
+    route_has_opposite_violation,
+    filter_candidates,
+    select_next_node,
+    close_route_to_exit,
+)
 
 class ACSTime:
+    """
+    Uma colônia de formigas cujo objetivo é encontrar um conjunto de rotas
+    que minimize o tempo total de viagem, cobrindo o máximo de paradas possível.
+    """
     def __init__(
         self,
         graph: nx.DiGraph,
         meta_edges: Dict[Tuple[Any, Any], dict],
-        stops: List[Any],
+        stops_to_visit: List[Any],
         start_node: Any,
-        pheromone_matrix: Dict[Tuple[Any, Any], float],
-        alpha: float = 1.0,
-        beta: float = 2.0,
-        evaporation: float = 0.1,
-        Q: float = 1.0,
-        opposites: Optional[Dict[Any, List[Any]]] = None,
-        exit_node: Any = None
+        exit_node: Any,
+        opposites: Dict[Any, List[Any]],
+        pheromones: Dict[Tuple[Any, Any], float],
+        alpha: float,
+        beta: float,
+        capacity: int,
+        max_route_attempts: int,
+        verbose: bool = False
     ):
         self.graph = graph
-        self.meta_edges = meta_edges      
-        self.stops = stops
+        self.meta_edges = meta_edges
+        self.stops_to_visit = set(stops_to_visit)
         self.start_node = start_node
-        self.tau = pheromone_matrix       
+        self.exit_node = exit_node
+        self.opposites = opposites
+        self.pheromones = pheromones
         self.alpha = alpha
         self.beta = beta
-        self.rho = evaporation
-        self.Q = Q
-        if opposites is None:
-            opposites = dict()
-        self.opposites = opposites
-        self.exit_node = exit_node
+        self.capacity = capacity
+        self.max_route_attempts = max_route_attempts
+        self.verbose = verbose
+        # Custo fixo em "assentos" para cada parada.
+        self.DEMAND_PER_STOP = 10
 
-    def iterate(self, n_ants: int, initial_routes: Optional[List[List[Any]]] = None) -> Tuple[List[List[Any]], int]:
-        import random
-        best_routes: List[List[Any]] = []
-        best_count: float = float('inf')
-        best_total_time: float = float('inf')
+    def iterate(self, n_ants: int) -> Tuple[List[List[Any]], float, int, float]:
+        """
+        Executa uma iteração completa da otimização com um número de formigas.
 
-        # If initial_routes are provided, use them to seed the best solution and pheromone
-        if initial_routes is not None and len(initial_routes) > 0:
-            best_routes = [list(route) for route in initial_routes]
-            best_count = len(initial_routes)
-            best_total_time = 0.0
-            for route in initial_routes:
-                for u, v in zip(route, route[1:]):
-                    if (u, v) in self.meta_edges:
-                        best_total_time += self.meta_edges[(u, v)]['time']
-            # Optionally reinforce pheromone on these routes
-            for route in initial_routes:
-                for u, v in zip(route, route[1:]):
-                    if (u, v) in self.tau:
-                        self.tau[(u, v)] += self.Q / max(1, best_count)
+        Cada formiga gera uma solução candidata completa. A melhor solução
+        encontrada entre todas as formigas nesta iteração é retornada.
 
-        for _ in range(n_ants):
-            demand = {stop: 10 for stop in self.stops}
-            routes = []
-            total_time = 0.0
+        Returns:
+            Uma tupla contendo (melhores_rotas, melhor_tempo, contagem_rotas, cobertura).
+        """
+        best_solution_routes: List[List[Any]] = []
+        best_solution_time: float = float('inf')
+        best_solution_coverage: float = 0.0
+
+        for ant_id in range(n_ants):
+            if self.verbose:
+                print(f"\n--- [ACSTime ANT {ant_id + 1}] ---")
+
+            # Cada formiga começa com um novo conjunto de demandas.
+            demand = {stop: self.DEMAND_PER_STOP for stop in self.stops_to_visit}
             
-            # Maintain visited set across all routes for this ant
-            ant_visited = set([self.start_node])
-            if self.exit_node is not None:
-                ant_visited.add(self.exit_node)
+            # A formiga constrói sua solução completa.
+            routes, total_time = self._build_solution_for_ant(demand, ant_id)
             
-            # Forward routes (start -> exit)
-            route_attempts = 0
-            max_route_attempts = 50  # Prevent infinite loops
-            while sum(demand.values()) > 0 and route_attempts < max_route_attempts:
-                route_attempts += 1
-                route = [self.start_node]
-                visited = set([self.start_node])  # Local visited for this route
-                forbidden = set(self.opposites.get(self.start_node, []))
-                capacity = 70
-                current = self.start_node
-                route_length = 0
-                max_route_length = 100  # Prevent infinite route construction
-                
-                while route_length < max_route_length:
-                    route_length += 1
-                    # If at exit node, end route
-                    if self.exit_node is not None and current == self.exit_node:
-                        break
-                    # If bus is full or no more valid candidates, try to go to exit if possible
-                    exit_reachable = self.exit_node is not None and nx.has_path(self.graph, current, self.exit_node)
-                    # Only consider candidates with remaining demand and not visited by this ant
-                    candidates = [n for n in self.graph.successors(current)
-                                  if n not in visited and n not in forbidden and n not in ant_visited and demand.get(n, 0) > 0]
-                    # Always allow exit node if reachable
-                    if self.exit_node is not None and self.exit_node in self.graph.successors(current):
-                        candidates.append(self.exit_node)
-                    # Remove bounceback candidates (nodes already in current route)
-                    candidates = [n for n in candidates if n not in route]
-                    if (capacity == 0 or not candidates) and exit_reachable:
-                        try:
-                            path_to_exit = nx.shortest_path(self.graph, current, self.exit_node, weight='time')
-                            for n in path_to_exit[1:]:
-                                if n in forbidden:
-                                    raise Exception('Opposite encountered')
-                                route.append(n)
-                                visited.add(n)
-                                ant_visited.add(n)  # Add to ant's global visited
-                                forbidden.update(self.opposites.get(n, []))
-                            current = self.exit_node
-                        except Exception:
-                            break
-                        break
-                    if not candidates:
-                        break
-                    # Ant/pheromone logic: increase exit node probability if bus is nearly full
-                    probs = []
-                    for n in candidates:
-                        tau = self.tau.get((current, n), 1e-6)
-                        eta = 1.0 / (self.meta_edges.get((current, n), {'time': 1.0})['time'])
-                        eta = eta ** self.beta  # Apply beta parameter
-                        if n == self.exit_node and capacity <= 20:
-                            tau *= 2.0
-                            eta *= 2.0
-                        probs.append((n, tau * eta))
-                    total_prob = sum(p for _, p in probs)
-                    if total_prob == 0:
-                        next_node = candidates[0]
-                    else:
-                        r = random.random()
-                        cum = 0.0
-                        for n, p in probs:
-                            cum += p / total_prob
-                            if r <= cum:
-                                next_node = n
-                                break
-                        else:
-                            next_node = candidates[-1]
-                    route.append(next_node)
-                    visited.add(next_node)
-                    ant_visited.add(next_node)  # Add to ant's global visited
-                    forbidden.update(self.opposites.get(next_node, []))
-                    current = next_node
-                    if self.exit_node is not None and current == self.exit_node:
-                        break
-                # Ensure route ends at exit node
-                if self.exit_node is not None and (not route or route[-1] != self.exit_node):
-                    try:
-                        path_to_exit = nx.shortest_path(self.graph, route[-1], self.exit_node, weight='time')
-                        for n in path_to_exit[1:]:
-                            if n in forbidden:
-                                raise Exception('Opposite encountered')
-                            route.append(n)
-                            visited.add(n)
-                            ant_visited.add(n)  # Add to ant's global visited
-                            forbidden.update(self.opposites.get(n, []))
-                    except Exception:
-                        continue
-                if self.exit_node is not None and (not route or route[-1] != self.exit_node):
-                    continue
-                # Enforce opposites constraint: skip route if it violates opposites
-                if route_has_opposite_violation(route, self.opposites):
-                    print("[DEBUG] Skipping route due to opposites violation:", route)
-                    continue
-                # Check if this route actually serves any bus stops (not just start→exit)
-                stops_in_route = [stop for stop in route if stop in self.stops]
-                if len(stops_in_route) == 0:
-                    print("[DEBUG] Skipping route: no bus stops served:", route)
-                    continue  # Skip routes that don't serve any bus stops
-                # Check if this route serves any new demand
-                if len(stops_in_route) > 0:
-                    routes.append(route)
-                    # Add time for this route (only meta-edges)
-                    route_time = 0.0
-                    for u, v in zip(route, route[1:]):
-                        if (u, v) in self.meta_edges:
-                            route_time += self.meta_edges[(u, v)]['time']
-                    total_time += route_time
-                    # Consume demand for stops in this route (only after route is accepted)
-                    capacity = 70
-                    for stop in route:
-                        if stop in demand and demand[stop] > 0 and capacity > 0:
-                            picked = min(10, demand[stop], capacity)
-                            demand[stop] -= picked
-                            capacity -= picked
+            # Avalia a solução da formiga.
+            coverage = self._calculate_coverage(demand)
             
-            # Reverse routes (exit -> start) to cover remaining demand
-            if sum(demand.values()) > 0 and self.exit_node is not None:
-                route_attempts = 0
-                while sum(demand.values()) > 0 and route_attempts < max_route_attempts:
-                    route_attempts += 1
-                    route = [self.exit_node]
-                    visited = set([self.exit_node])  # Local visited for this route
-                    forbidden = set(self.opposites.get(self.exit_node, []))
-                    capacity = 70
-                    current = self.exit_node
-                    route_length = 0
-                    
-                    while route_length < max_route_length:
-                        route_length += 1
-                        # Pick up passengers at current stop
-                        if current in demand and demand[current] > 0 and capacity > 0:
-                            picked = min(10, demand[current], capacity)
-                            demand[current] -= picked
-                            capacity -= picked
-                        # If at start node, end route
-                        if current == self.start_node:
-                            break
-                        # If bus is full or no more valid candidates, try to go to start if possible
-                        start_reachable = nx.has_path(self.graph, current, self.start_node)
-                        # Only consider candidates with remaining demand and not visited by this ant
-                        candidates = [n for n in self.graph.predecessors(current)
-                                      if n not in visited and n not in forbidden and n not in ant_visited and demand.get(n, 0) > 0]
-                        # Always allow start node if reachable
-                        if self.start_node in self.graph.predecessors(current):
-                            candidates.append(self.start_node)
-                        # Remove bounceback candidates (nodes already in current route)
-                        candidates = [n for n in candidates if n not in route]
-                        if (capacity == 0 or not candidates) and start_reachable:
-                            try:
-                                path_to_start = nx.shortest_path(self.graph, current, self.start_node, weight='time')
-                                for n in path_to_start[1:]:
-                                    if n in forbidden:
-                                        raise Exception('Opposite encountered')
-                                    route.append(n)
-                                    visited.add(n)
-                                    ant_visited.add(n)  # Add to ant's global visited
-                                    forbidden.update(self.opposites.get(n, []))
-                                current = self.start_node
-                            except Exception:
-                                break
-                            break
-                        if not candidates:
-                            break
-                        # Ant/pheromone logic for reverse direction
-                        probs = []
-                        for n in candidates:
-                            # For reverse routes, use the reverse edge for pheromone
-                            tau = self.tau.get((n, current), 1e-6)
-                            eta = 1.0 / (self.meta_edges.get((n, current), {'time': 1.0})['time'])
-                            eta = eta ** self.beta  # Apply beta parameter
-                            if n == self.start_node and capacity <= 20:
-                                tau *= 2.0
-                                eta *= 2.0
-                            probs.append((n, tau * eta))
-                        total_prob = sum(p for _, p in probs)
-                        if total_prob == 0:
-                            next_node = candidates[0]
-                        else:
-                            r = random.random()
-                            cum = 0.0
-                            for n, p in probs:
-                                cum += p / total_prob
-                                if r <= cum:
-                                    next_node = n
-                                    break
-                            else:
-                                next_node = candidates[-1]
-                        route.append(next_node)
-                        visited.add(next_node)
-                        ant_visited.add(next_node)  # Add to ant's global visited
-                        forbidden.update(self.opposites.get(next_node, []))
-                        current = next_node
-                        if current == self.start_node:
-                            break
-                    # Ensure route ends at start node
-                    if not route or route[-1] != self.start_node:
-                        try:
-                            path_to_start = nx.shortest_path(self.graph, route[-1], self.start_node, weight='time')
-                            for n in path_to_start[1:]:
-                                if n in forbidden:
-                                    raise Exception('Opposite encountered')
-                                route.append(n)
-                                visited.add(n)
-                                ant_visited.add(n)  # Add to ant's global visited
-                                forbidden.update(self.opposites.get(n, []))
-                        except Exception:
-                            continue
-                    if not route or route[-1] != self.start_node:
-                        continue
-                    if route_has_opposite_violation(route, self.opposites):
-                        continue
-                    
-                    # Check if this route actually serves any bus stops (not just exit→start)
-                    stops_in_route = [stop for stop in route if stop in self.stops]
-                    if len(stops_in_route) == 0:
-                        continue  # Skip routes that don't serve any bus stops
-                    
-                    # Check if this route serves any new demand
-                    if len(stops_in_route) > 0:
-                        routes.append(route)
-                        # Add time for this route (only meta-edges)
-                        route_time = 0.0
-                        for u, v in zip(route, route[1:]):
-                            if (u, v) in self.meta_edges:
-                                route_time += self.meta_edges[(u, v)]['time']
-                        total_time += route_time
-                        # Consume demand for stops in this route (only after route is accepted)
-                        capacity = 70
-                        for stop in route:
-                            if stop in demand and demand[stop] > 0 and capacity > 0:
-                                picked = min(10, demand[stop], capacity)
-                                demand[stop] -= picked
-                                capacity -= picked
+            # A heurística desta colônia é: melhor cobertura, depois menor tempo.
+            is_better_solution = (
+                not best_solution_routes or
+                coverage > best_solution_coverage or
+                (coverage == best_solution_coverage and total_time < best_solution_time)
+            )
+
+            if is_better_solution:
+                best_solution_routes = routes
+                best_solution_time = total_time
+                best_solution_coverage = coverage
+
+        return best_solution_routes, best_solution_time, len(best_solution_routes), best_solution_coverage
+
+    def _build_solution_for_ant(self, demand: Dict[Any, int], ant_id: int) -> Tuple[List[List[Any]], float]:
+        """
+        Uma única formiga constrói um conjunto de rotas até que toda a demanda seja
+        atendida ou o número máximo de tentativas de rota seja atingido.
+        """
+        solution_routes: List[List[Any]] = []
+        total_time: float = 0.0
+        stops_served_by_ant: Set[Any] = set()
+
+        for attempt in range(self.max_route_attempts):
+            # Se toda a demanda foi atendida, a formiga termina.
+            if sum(demand.values()) == 0:
+                break
             
-            # Only accept solutions that cover all demand
-            if any(d > 0 for d in demand.values()):
-                continue
-            count = len(routes)
-            if (count < best_count) or (count == best_count and total_time < best_total_time):
-                best_count = count
-                best_routes = routes
-                best_total_time = total_time
+            # Tenta construir uma nova rota para atender à demanda restante.
+            new_route = self._build_single_route(stops_served_by_ant, ant_id, len(solution_routes) + 1)
+            
+            if not new_route:
+                if self.verbose:
+                    print(f"  > [Ant {ant_id+1}] Tentativa {attempt+1}: Nenhuma rota válida pôde ser construída. Encerrando.")
+                break # Se não consegue construir mais rotas, a formiga para.
 
-        # Global evaporation
-        for edge in list(self.tau.keys()):
-            self.tau[edge] *= (1 - self.rho)
+            # Verifica se a nova rota é produtiva (atende a alguma demanda nova).
+            newly_served_stops = {stop for stop in new_route if stop in demand and demand[stop] > 0}
 
-        # Elitist reinforcement: more pheromone on edges used (only meta-edges)
-        for route in best_routes:
-            for u, v in zip(route, route[1:]):
-                if (u, v) in self.meta_edges:
-                    self.tau[(u, v)] = self.tau.get((u, v), 0.0) + (self.Q / best_count)
+            if newly_served_stops:
+                solution_routes.append(new_route)
+                stops_served_by_ant.update(newly_served_stops)
+                self._update_demand_and_time(demand, new_route, total_time)
+                if self.verbose:
+                    print(f"  > [Ant {ant_id+1}] Rota {len(solution_routes)} aceita: {new_route}")
+            elif self.verbose:
+                print(f"  > [Ant {ant_id+1}] Tentativa {attempt+1}: Rota construída mas não atendeu nova demanda. Descartando.")
 
-        if best_count == float('inf'):
-            return [], 0
-        return best_routes, int(best_count)
+        return solution_routes, total_time
 
-    def get_pheromone(self) -> Dict[Tuple[Any, Any], float]:
-        return self.tau
+    def _build_single_route(self, stops_served_by_ant: Set[Any], ant_id: int, route_num: int) -> Optional[List[Any]]:
+        """
+        Constrói uma única rota, respeitando capacidade e restrições de opostos.
+        """
+        if self.verbose:
+            print(f"    -> [Ant {ant_id+1}, Rota {route_num}] Iniciando construção a partir de {self.start_node}")
+
+        route = [self.start_node]
+        visited_in_route = {self.start_node}
+        remaining_capacity = self.capacity
+
+        while remaining_capacity > 0:
+            current_node = route[-1]
+            if current_node == self.exit_node:
+                if self.verbose: print(f"      - Chegou ao nó de saída. Finalizando construção da rota parcial.")
+                break
+
+            if self.verbose: print(f"\n      - Posição atual: {current_node}, Capacidade: {remaining_capacity}")
+
+            # Constrói a lista de nós proibidos para o próximo passo.
+            forbidden_nodes = set(visited_in_route)
+            for node in route:
+                forbidden_nodes.update(self.opposites.get(node, []))
+            for served_stop in stops_served_by_ant:
+                forbidden_nodes.update(self.opposites.get(served_stop, []))
+
+            if self.verbose:
+                raw_neighbors = list(self.graph.successors(current_node))
+                print(f"      - Vizinhos brutos no meta-grafo: {raw_neighbors}")
+                print(f"      - Nós já visitados nesta rota: {visited_in_route}")
+                print(f"      - Opostos de nós na rota: {[self.opposites.get(n, []) for n in route]}")
+                print(f"      - Opostos de paradas já servidas: {[self.opposites.get(n, []) for n in stops_served_by_ant]}")
+                print(f"      - Lista completa de proibidos: {forbidden_nodes}")
+
+            candidates = filter_candidates(self.graph, current_node, forbidden_nodes, visited_in_route)
+            
+            if self.verbose: print(f"      - Candidatos válidos (pós-filtro): {candidates}")
+
+            if not candidates:
+                if self.verbose: print(f"      - [!!!] Nenhum candidato válido encontrado. Encerrando rota parcial.")
+                break # Não há para onde ir.
+
+            next_node = select_next_node(current_node, candidates, self.pheromones, self.meta_edges, self.alpha, self.beta)
+            if self.verbose: print(f"      - Próximo nó selecionado: {next_node}")
+            
+            if not next_node: break # Não conseguiu selecionar um próximo nó.
+
+            route.append(next_node)
+            visited_in_route.add(next_node)
+            if self.verbose: print(f"      - Adicionando '{next_node}' à rota. Rota atual: {route}")
+
+
+            # Simula o consumo de capacidade se o nó for uma parada.
+            if next_node in self.stops_to_visit:
+                remaining_capacity -= self.DEMAND_PER_STOP
+                if self.verbose: print(f"      - '{next_node}' é uma parada. Nova capacidade: {remaining_capacity}")
+        
+        # Tenta fechar a rota até o nó de saída.
+        if self.verbose:
+            print(f"    -> Rota parcial construída: {route}. Tentando fechar para {self.exit_node}.")
+            
+        # A correção anterior que passa `self.opposites` ainda é válida e necessária.
+        closed_route, _ = close_route_to_exit(route, self.graph, self.exit_node, self.meta_edges, self.opposites)
+        
+        if not closed_route:
+            if self.verbose: print("      - [FALHA] Não foi possível fechar a rota até a saída (ou o caminho violou opostos).")
+            return None
+        
+        # A validação final de opostos na rota completa é crucial
+        if route_has_opposite_violation(closed_route, self.opposites):
+            if self.verbose: print(f"      - [FALHA] A rota final {closed_route} tem uma violação de opostos.")
+            return None
+
+        if self.verbose: print(f"    -> Rota final válida construída: {closed_route}")
+        return closed_route
+    
+    def _update_demand_and_time(self, demand: Dict[Any, int], route: List[Any], total_time: float) -> float:
+        """
+        Atualiza o dicionário de demanda e o tempo total com base em uma nova rota.
+        """
+        for stop in route:
+            if stop in demand and demand[stop] > 0:
+                demand[stop] = 0
+                for opp_stop in self.opposites.get(stop, []):
+                    if opp_stop in demand:
+                        demand[opp_stop] = 0
+        
+        # Acumula o tempo da rota
+        for u, v in zip(route, route[1:]):
+            total_time += self.meta_edges.get((u, v), {}).get('time', 0)
+        return total_time
+
+    def _calculate_coverage(self, final_demand: Dict[Any, int]) -> float:
+        """
+        Calcula a porcentagem de paradas cobertas.
+        """
+        total_stops = len(self.stops_to_visit)
+        if total_stops == 0:
+            return 100.0
+        
+        uncovered_count = sum(1 for demand_val in final_demand.values() if demand_val > 0)
+        covered_count = total_stops - uncovered_count
+        
+        return 100.0 * (covered_count / total_stops)

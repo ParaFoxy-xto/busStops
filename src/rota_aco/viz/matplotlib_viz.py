@@ -1,211 +1,190 @@
-# viz/matplotlib_viz.py
+# src/rota_aco/viz/matplotlib_viz.py
+
+"""
+Funções para gerar visualizações de grafos e rotas estáticas usando Matplotlib.
+"""
+
+from typing import Any, List, Optional
 
 import matplotlib.pyplot as plt
 import networkx as nx
-from typing import Any, List, Optional
-import pandas as pd
 
+# --- Funções Auxiliares de Plotagem (Lógica Comum) ---
 
-def plot_meta_route(
-    G: nx.MultiDiGraph,
-    route: List[Any],
-    bus_stops: List[Any],
-    output_path: str,
-    start_node: Optional[Any] = None,
-    exit_node: Optional[Any] = None,
-    color: str = "red",
-) -> None:
-    """
-    Plota a rota expandida sobre o grafo original usando Matplotlib.
-    - G: grafo original
-    - route: lista de nós no caminho final
-    - bus_stops: lista de nós de parada para destacar
-    - output_path: arquivo de saída (PNG)
-    - start_node, exit_node: nós de parada inicial e final para destacar em verde
-    """
-    # Coordenadas de todos os nós (ruas)
-    xs_all = [float(data['x']) for _, data in G.nodes(data=True)]
-    ys_all = [float(data['y']) for _, data in G.nodes(data=True)]
-
-    fig, ax = plt.subplots(figsize=(10, 10))
-    ax.scatter(xs_all, ys_all, c='lightgray', s=2, label='Rua')
-
-    # Paradas de ônibus
-    xs_stops = [float(G.nodes[n]['x']) for n in bus_stops]
-    ys_stops = [float(G.nodes[n]['y']) for n in bus_stops]
-    ax.scatter(xs_stops, ys_stops, c='blue', s=20, label='Paradas')
-
-    # Rota
-    xs_route = [float(G.nodes[n]['x']) for n in route]
-    ys_route = [float(G.nodes[n]['y']) for n in route]
-    ax.plot(xs_route, ys_route, linewidth=2, label=f"Rota {color}", c=color)
-
-    # Destaque start e exit em verde
-    if start_node is not None:
-        x0, y0 = float(G.nodes[start_node]['x']), float(G.nodes[start_node]['y'])
-        ax.scatter([x0], [y0], c='green', s=100, marker='o', label='Start')
-    if exit_node is not None:
-        x1, y1 = float(G.nodes[exit_node]['x']), float(G.nodes[exit_node]['y'])
-        ax.scatter([x1], [y1], c='green', s=100, marker='X', label='Exit')
-
-    ax.legend()
+def _setup_plot(title: str) -> tuple:
+    """Configura a figura e os eixos básicos para uma plotagem."""
+    fig, ax = plt.subplots(figsize=(12, 12))
+    ax.set_title(title, fontsize=16)
     ax.set_xlabel('Longitude')
     ax.set_ylabel('Latitude')
-    ax.set_title('Rota Ótima no Grafo Original')
-    plt.savefig(output_path, dpi=150)
-    plt.close(fig)
+    return fig, ax
 
-# src/rota_aco/viz/matplotlib_viz.py
+def _draw_nodes(ax, graph: nx.Graph, nodes: List[Any], **kwargs):
+    """Desenha um conjunto de nós no eixo com coordenadas do grafo."""
+    if not nodes: return
+    coords = [(graph.nodes[n]['x'], graph.nodes[n]['y']) for n in nodes if n in graph.nodes]
+    if not coords: return
+    xs, ys = zip(*coords)
+    ax.scatter(xs, ys, **kwargs)
 
-# src/rota_aco/viz/matplotlib_viz.py
+def _draw_path(ax, graph: nx.Graph, path: List[Any], **kwargs):
+    """Desenha um caminho (rota) no eixo."""
+    if not path or len(path) < 2: return
+    coords = [(graph.nodes[n]['x'], graph.nodes[n]['y']) for n in path if n in graph.nodes]
+    if len(coords) < 2: return
+    xs, ys = zip(*coords)
+    ax.plot(xs, ys, **kwargs)
 
-import matplotlib.pyplot as plt
+def _highlight_start_exit(ax, graph: nx.Graph, start_node: Any, exit_node: Any):
+    """Destaca os nós de início e fim no mapa."""
+    if start_node and start_node in graph.nodes:
+        _draw_nodes(ax, graph, [start_node], c='green', s=150, marker='o', label='Partida', zorder=5)
+    if exit_node and exit_node in graph.nodes:
+        _draw_nodes(ax, graph, [exit_node], c='red', s=150, marker='X', label='Chegada', zorder=5)
 
-def plot_meta_graph(G, meta_G, start_node=None, exit_node=None, show_labels=True, output=None):
-    """
-    Plota o grafo original em cinza e sobrepõe as arestas do meta-grafo em azul,
-    destacando nós de meta-Grafo em vermelho. Se fornecido, marca start/exit em verde.
-    Se show_labels=True, escreve o ID de cada nó ao lado do ponto.
-    Se 'output' for informado, salva em arquivo; caso contrário, mostra na tela.
-    """
-    fig, ax = plt.subplots(figsize=(10,10))
-
-    # 1) Todos os nós do grafo original em cinza
-    xs_all = [float(data['x']) for _, data in G.nodes(data=True)]
-    ys_all = [float(data['y']) for _, data in G.nodes(data=True)]
-    ax.scatter(xs_all, ys_all, c='lightgray', s=5, label='Grafo original')
-
-    # 2) Todas as arestas do meta-grafo (linhas azuis)
-    for u, v, data in meta_G.edges(data=True):
-        x1, y1 = float(G.nodes[u]['x']), float(G.nodes[u]['y'])
-        x2, y2 = float(G.nodes[v]['x']), float(G.nodes[v]['y'])
-        ax.plot([x1, x2], [y1, y2], c='blue', linewidth=1)
-
-    # 3) Nós do meta-grafo em vermelho
-    xs_meta = [float(G.nodes[n]['x']) for n in meta_G.nodes()]
-    ys_meta = [float(G.nodes[n]['y']) for n in meta_G.nodes()]
-    ax.scatter(xs_meta, ys_meta, c='red', s=30, label='Nós meta-grafo')
-
-    # 4) Opcional: labels dos nós
-    if show_labels:
-        for n in meta_G.nodes():
-            x, y = float(G.nodes[n]['x']), float(G.nodes[n]['y'])
-            ax.text(x, y, str(n), fontsize=6, color='black',
-                    verticalalignment='bottom', horizontalalignment='right')
-
-    # 5) Destacar start/exit em verde, se existirem
-    if start_node is not None:
-        x, y = float(G.nodes[start_node]['x']), float(G.nodes[start_node]['y'])
-        ax.scatter(x, y, c='green', s=80, marker='*', label='Start')
-        if show_labels:
-            ax.text(x, y, str(start_node), fontsize=8, color='green',
-                    verticalalignment='bottom', horizontalalignment='left')
-    if exit_node is not None:
-        x, y = float(G.nodes[exit_node]['x']), float(G.nodes[exit_node]['y'])
-        ax.scatter(x, y, c='green', s=80, marker='X', label='Exit')
-        if show_labels:
-            ax.text(x, y, str(exit_node), fontsize=8, color='green',
-                    verticalalignment='top', horizontalalignment='left')
-
-    ax.legend(loc='upper right')
-    ax.set_xlabel("Longitude")
-    ax.set_ylabel("Latitude")
-    ax.set_title("Meta-Grafo: nós e arestas")
-
-    if output:
-        fig.savefig(output, dpi=150, bbox_inches='tight')
-        print(f"Salvo em {output}")
+def _save_plot(fig, output_path: Optional[str]):
+    """Salva a figura em um arquivo ou a exibe na tela."""
+    if output_path:
+        fig.savefig(output_path, dpi=150, bbox_inches='tight')
+        print(f"Gráfico salvo em: '{output_path}'")
     else:
         plt.show()
+    plt.close(fig)
+
+# --- Funções Principais de Plotagem ---
 
 def plot_multiple_routes(
-    G: nx.MultiDiGraph,
+    original_graph: nx.MultiDiGraph,
     routes: List[List[Any]],
-    bus_stops: List[Any],
+    all_bus_stops: List[Any],
     output_path: str,
     start_node: Optional[Any] = None,
     exit_node: Optional[Any] = None,
-    colors: Optional[List[str]] = None,
 ) -> None:
     """
-    Plota múltiplas rotas expandidas sobre o grafo original usando Matplotlib.
-    - G: grafo original
-    - routes: lista de rotas (cada rota é uma lista de nós)
-    - bus_stops: lista de nós de parada para destacar
-    - output_path: arquivo de saída (PNG)
-    - start_node, exit_node: nós de parada inicial e final para destacar em verde
-    - colors: lista de cores para cada rota (opcional)
+    Plota múltiplas rotas expandidas sobre o grafo original.
     """
-    if colors is None:
-        colors = ['red', 'blue', 'green', 'orange', 'purple', 'brown', 'pink', 'gray', 'olive', 'cyan']
+    fig, ax = _setup_plot(f'Solução Final com {len(routes)} Rota(s)')
     
-    # Coordenadas de todos os nós (ruas)
-    xs_all = [float(data['x']) for _, data in G.nodes(data=True)]
-    ys_all = [float(data['y']) for _, data in G.nodes(data=True)]
+    # 1. Desenha o fundo do grafo de ruas
+    _draw_nodes(ax, original_graph, list(original_graph.nodes()), c='lightgray', s=2, label='Ruas')
+    
+    # 2. Desenha as paradas de ônibus
+    _draw_nodes(ax, original_graph, all_bus_stops, c='darkblue', s=25, label='Paradas', zorder=3)
 
-    fig, ax = plt.subplots(figsize=(12, 12))
-    ax.scatter(xs_all, ys_all, c='lightgray', s=2, label='Rua')
-
-    # Paradas de ônibus
-    xs_stops = [float(G.nodes[n]['x']) for n in bus_stops]
-    ys_stops = [float(G.nodes[n]['y']) for n in bus_stops]
-    ax.scatter(xs_stops, ys_stops, c='blue', s=20, label='Paradas')
-
-    # Plot each route with a different color
+    # 3. Desenha cada rota
+    colors = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33', '#a65628', '#f781bf']
     for i, route in enumerate(routes):
-        if len(route) < 2:  # Skip invalid routes
-            continue
-        color = colors[i % len(colors)]
-        xs_route = [float(G.nodes[n]['x']) for n in route]
-        ys_route = [float(G.nodes[n]['y']) for n in route]
-        ax.plot(xs_route, ys_route, linewidth=2, label=f"Rota {i+1}", c=color, alpha=0.8)
+        _draw_path(ax, original_graph, route, c=colors[i % len(colors)], linewidth=2.5, alpha=0.9, label=f"Rota {i+1}", zorder=4)
 
-    # Destaque start e exit em verde
-    if start_node is not None:
-        x0, y0 = float(G.nodes[start_node]['x']), float(G.nodes[start_node]['y'])
-        ax.scatter([x0], [y0], c='green', s=100, marker='o', label='Start')
-    if exit_node is not None:
-        x1, y1 = float(G.nodes[exit_node]['x']), float(G.nodes[exit_node]['y'])
-        ax.scatter([x1], [y1], c='green', s=100, marker='X', label='Exit')
+    # 4. Destaca início e fim
+    _highlight_start_exit(ax, original_graph, start_node, exit_node)
 
     ax.legend()
-    ax.set_xlabel('Longitude')
-    ax.set_ylabel('Latitude')
-    ax.set_title(f'Rotas Ótimas no Grafo Original ({len(routes)} rotas)')
-    plt.savefig(output_path, dpi=150, bbox_inches='tight')
-    plt.close(fig)
+    _save_plot(fig, output_path)
 
-def plot_convergence(csv_path: str = 'output/controller_convergence.csv', output_path: str = 'output/convergence_plot.png'):
+def plot_multiple_meta_routes(
+    meta_graph: nx.DiGraph,
+    meta_routes: List[List[Any]],
+    stops_to_visit: List[Any],
+    output_path: str,
+    start_node: Optional[Any] = None,
+    exit_node: Optional[Any] = None,
+    show_labels: bool = False,
+) -> None:
     """
-    Plota a convergência do controlador a partir do CSV gerado (controller_convergence.csv).
-    Mostra best_total_time, best_coverage e best_count em função de v (número de veículos/rotas).
-    Salva o gráfico em output/convergence_plot.png.
+    Plota múltiplas meta-rotas sobre o meta-grafo.
     """
-    df = pd.read_csv(csv_path)
-    fig, ax1 = plt.subplots(figsize=(10, 6))
+    fig, ax = _setup_plot(f'Meta-Rotas no Meta-Grafo ({len(meta_routes)} rotas)')
 
-    color = 'tab:blue'
-    ax1.set_xlabel('Número de veículos/rotas (v)')
-    ax1.set_ylabel('Tempo total (best_total_time)', color=color)
-    ax1.plot(df['v'], df['best_total_time'], marker='o', color=color, label='Tempo total')
-    ax1.tick_params(axis='y', labelcolor=color)
+    # 1. Desenha as arestas do meta-grafo
+    for u, v in meta_graph.edges():
+        _draw_path(ax, meta_graph, [u, v], c='lightblue', linewidth=1, zorder=1)
+        
+    # 2. Desenha os nós do meta-grafo (representantes)
+    _draw_nodes(ax, meta_graph, list(meta_graph.nodes()), c='gray', s=30, label='Nós do Meta-Grafo', zorder=2)
+    
+    # 3. Desenha as paradas que devem ser visitadas
+    _draw_nodes(ax, meta_graph, stops_to_visit, c='darkblue', s=40, label='Paradas com Demanda', zorder=3)
 
-    ax2 = ax1.twinx()
-    color2 = 'tab:green'
-    ax2.set_ylabel('Cobertura (%)', color=color2)
-    ax2.plot(df['v'], df['best_coverage'], marker='s', color=color2, label='Cobertura')
-    ax2.tick_params(axis='y', labelcolor=color2)
+    # 4. Desenha cada meta-rota
+    colors = ['#e41a1c', '#377eb8', '#4daf4a', '#984ea3', '#ff7f00', '#ffff33', '#a65628', '#f781bf']
+    for i, route in enumerate(meta_routes):
+        _draw_path(ax, meta_graph, route, c=colors[i % len(colors)], linewidth=2.5, alpha=0.9, label=f"Meta-Rota {i+1}", zorder=4)
+        
+    # 5. Destaca início e fim
+    _highlight_start_exit(ax, meta_graph, start_node, exit_node)
+    
+    # 6. Adiciona labels se solicitado
+    if show_labels:
+        for node in meta_graph.nodes():
+            x, y = meta_graph.nodes[node]['x'], meta_graph.nodes[node]['y']
+            ax.text(x, y + 0.0001, str(node), fontsize=7, ha='center', color='black')
 
-    # Plot best_count as a bar plot
-    ax3 = ax1.twinx()
-    color3 = 'tab:red'
-    ax3.spines['right'].set_position(('outward', 60))
-    ax3.set_ylabel('Número de rotas (best_count)', color=color3)
-    ax3.bar(df['v'], df['best_count'], alpha=0.2, color=color3, label='Nº de rotas')
-    ax3.tick_params(axis='y', labelcolor=color3)
+    ax.legend()
+    _save_plot(fig, output_path)
 
-    fig.tight_layout()
-    plt.title('Convergência do Controlador ACO')
-    plt.savefig(output_path, dpi=150, bbox_inches='tight')
-    plt.close(fig)
-    print(f"Convergência plotada e salva em {output_path}")
+
+def plot_meta_graph(
+    meta_graph: nx.DiGraph,
+    output_path: str,
+    start_node: Optional[Any] = None,
+    exit_node: Optional[Any] = None,
+    show_labels: bool = False
+) -> None:
+    """
+    Plota a estrutura do meta-grafo: seus nós e arestas.
+    """
+    fig, ax = _setup_plot('Estrutura do Meta-Grafo Gerado')
+
+    # 1. Desenha as arestas do meta-grafo
+    for u, v in meta_graph.edges():
+        _draw_path(ax, meta_graph, [u, v], c='lightblue', linewidth=1, zorder=1)
+        
+    # 2. Desenha os nós do meta-grafo (representantes)
+    _draw_nodes(ax, meta_graph, list(meta_graph.nodes()), c='darkblue', s=40, label='Nós do Meta-Grafo', zorder=3)
+    
+    # 3. Destaca início e fim
+    _highlight_start_exit(ax, meta_graph, start_node, exit_node)
+    
+    # 4. Adiciona labels se solicitado
+    if show_labels:
+        for node in meta_graph.nodes():
+            x, y = meta_graph.nodes[node]['x'], meta_graph.nodes[node]['y']
+            ax.text(x, y + 0.0001, str(node), fontsize=7, ha='center', color='black')
+
+    ax.legend()
+    _save_plot(fig, output_path)
+
+def plot_path_debug(
+    graph: nx.MultiDiGraph,
+    path_to_plot: List[Any],
+    u_node: Any,
+    v_node: Any,
+    u_opposites: List[Any],
+    output_path: str
+):
+    """
+    Plota um único caminho para depuração, destacando o início, fim e opostos.
+    """
+    fig, ax = _setup_plot(f'Análise do Caminho: {u_node} -> {v_node}')
+    
+    # Desenha todos os nós do grafo de fundo
+    _draw_nodes(ax, graph, list(graph.nodes()), c='lightgray', s=5, zorder=1)
+    
+    # Destaca o caminho
+    _draw_path(ax, graph, path_to_plot, c='blue', linewidth=3, alpha=0.8, label='Caminho Analisado', zorder=2)
+    
+    # Destaca os nós no caminho
+    _draw_nodes(ax, graph, path_to_plot, c='blue', s=20, zorder=3)
+    
+    # Destaca início (u) e fim (v) do caminho
+    _draw_nodes(ax, graph, [u_node], c='green', s=150, marker='o', label=f'Início (u): {u_node}', zorder=4)
+    _draw_nodes(ax, graph, [v_node], c='red', s=150, marker='X', label=f'Fim (v): {v_node}', zorder=4)
+    
+    # Destaca os opostos do nó de início (u)
+    if u_opposites:
+        _draw_nodes(ax, graph, u_opposites, c='orange', s=100, marker='s', label=f'Opostos de u', zorder=4)
+
+    ax.legend()
+    _save_plot(fig, output_path)

@@ -37,9 +37,9 @@ rota_aco/
 ##  Instalação
 
 ```bash
-git clone https://github.com/seu-usuario/rota_aco.git
-cd rota_aco
-pip install -e src
+git clone https://github.com/parafoxy-xto/busstops.git
+cd .\src\rota_aco\
+pip install -r requirements.txt
 $Env:PYTHONPATH = "$PWD/src"
 ```
 

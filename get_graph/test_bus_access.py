@@ -36,7 +36,7 @@ def get_node_coord(node, data):
 start_coords = (-15.77614, -47.871507)
 # (The exit coordinate is not used in this traversal.)
 # Load the graph from file.
-G = nx.read_graphml("bus_network.graphml")
+G = nx.read_graphml("graphml/grafo.graphml")
 
 # Preprocess: For every directed edge with highway=="bus_access" (d11 attribute) that leads to a bus stop,
 # add the reverse edge if not present—making these edges effectively undirected.
