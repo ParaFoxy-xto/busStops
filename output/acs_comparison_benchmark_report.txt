@@ -1,0 +1,109 @@
+RELATÓRIO DE BENCHMARK - COMPARAÇÃO ESTATÍSTICA
+============================================================
+Grafo: graphml/grafo.graphml
+Pontos para visitar: 6
+Início: 249729714, Fim: 12529762104
+
+GREEDY
+------
+Taxa de sucesso: 100.0% (10/10)
+
+DISTÂNCIA:
+  Média: 8927.00
+  Mediana: 8927.00
+  Desvio padrão: 0.00
+  Min/Max: 8927.00 / 8927.00
+
+TEMPO DE EXECUÇÃO:
+  Média: 0.015s
+  Mediana: 0.015s
+  Desvio padrão: 0.000s
+  Min/Max: 0.015s / 0.016s
+
+COBERTURA:
+  Média: 100.00%
+  Mediana: 100.00%
+  Min/Max: 100.00% / 100.00%
+
+
+ACO
+---
+Taxa de sucesso: 100.0% (10/10)
+
+DISTÂNCIA:
+  Média: inf
+  Mediana: inf
+  Desvio padrão: 0.00
+  Min/Max: inf / inf
+
+TEMPO DE EXECUÇÃO:
+  Média: 0.077s
+  Mediana: 0.077s
+  Desvio padrão: 0.002s
+  Min/Max: 0.076s / 0.082s
+
+COBERTURA:
+  Média: 0.00%
+  Mediana: 0.00%
+  Min/Max: 0.00% / 0.00%
+
+
+BRUTE_FORCE
+-----------
+Taxa de sucesso: 100.0% (10/10)
+
+DISTÂNCIA:
+  Média: 8371.59
+  Mediana: 8371.59
+  Desvio padrão: 0.00
+  Min/Max: 8371.59 / 8371.59
+
+TEMPO DE EXECUÇÃO:
+  Média: 2.670s
+  Mediana: 2.669s
+  Desvio padrão: 0.017s
+  Min/Max: 2.639s / 2.690s
+
+COBERTURA:
+  Média: 100.00%
+  Mediana: 100.00%
+  Min/Max: 100.00% / 100.00%
+
+
+COMPARAÇÃO ENTRE ALGORITMOS
+==============================
+
+Algoritmo    Dist.Média   Tempo Médio  Cobertura  Consistência
+------------------------------------------------------------
+GREEDY       8927.00      0.015        100.00%    Alta
+ACO          inf          0.077        0.00%      Alta
+BRUTE_FORCE  8371.59      2.670        100.00%    Alta
+
+MELHORES EM CADA CATEGORIA:
+  Melhor distância: BRUTE_FORCE
+  Mais rápido: GREEDY
+  Mais consistente: GREEDY
+
+DADOS PARA COMPARAÇÃO COM ACS DUPLO
+===================================
+
+GREEDY:
+  Distância média: 8927.00
+  Melhor resultado: 8927.00
+  Pior resultado: 8927.00
+  Desvio padrão: 0.00
+  Tempo médio: 0.015s
+
+ACO:
+  Distância média: inf
+  Melhor resultado: inf
+  Pior resultado: inf
+  Desvio padrão: 0.00
+  Tempo médio: 0.077s
+
+BRUTE_FORCE:
+  Distância média: 8371.59
+  Melhor resultado: 8371.59
+  Pior resultado: 8371.59
+  Desvio padrão: 0.00
+  Tempo médio: 2.670s

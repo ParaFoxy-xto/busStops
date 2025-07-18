@@ -1,0 +1,200 @@
+{
+  "analysis_timestamp": "2025-07-17T23:00:34.162591",
+  "iterations_detail": [
+    {
+      "iteration": 0,
+      "acs_time": {
+        "distance": 2222.3518098853465,
+        "routes": 1,
+        "coverage": 50.0
+      },
+      "acs_vehicle": {
+        "distance": 0.0,
+        "routes": 0,
+        "coverage": 0.0
+      },
+      "chosen_quality": 1.500224885687356,
+      "best_quality_so_far": 1.500224885687356
+    },
+    {
+      "iteration": 1,
+      "acs_time": {
+        "distance": 2222.3518098853465,
+        "routes": 1,
+        "coverage": 50.0
+      },
+      "acs_vehicle": {
+        "distance": 4005.5752626074755,
+        "routes": 2,
+        "coverage": 50.0
+      },
+      "chosen_quality": 3.0001247948602554,
+      "best_quality_so_far": 3.0001247948602554
+    },
+    {
+      "iteration": 2,
+      "acs_time": {
+        "distance": 4002.9569706689063,
+        "routes": 2,
+        "coverage": 50.0
+      },
+      "acs_vehicle": {
+        "distance": 2221.972343817127,
+        "routes": 1,
+        "coverage": 50.0
+      },
+      "chosen_quality": 3.0001248764668706,
+      "best_quality_so_far": 3.0001248764668706
+    },
+    {
+      "iteration": 3,
+      "acs_time": {
+        "distance": 2220.663197847842,
+        "routes": 1,
+        "coverage": 50.0
+      },
+      "acs_vehicle": {
+        "distance": 2221.972343817127,
+        "routes": 1,
+        "coverage": 50.0
+      },
+      "chosen_quality": 1.5002250566154602,
+      "best_quality_so_far": 3.0001248764668706
+    },
+    {
+      "iteration": 4,
+      "acs_time": {
+        "distance": 4006.801291505219,
+        "routes": 2,
+        "coverage": 50.0
+      },
+      "acs_vehicle": {
+        "distance": 4002.9569706689063,
+        "routes": 2,
+        "coverage": 50.0
+      },
+      "chosen_quality": 3.0001248764668706,
+      "best_quality_so_far": 3.0001248764668706
+    },
+    {
+      "iteration": 5,
+      "acs_time": {
+        "distance": 2220.663197847842,
+        "routes": 1,
+        "coverage": 50.0
+      },
+      "acs_vehicle": {
+        "distance": 4005.5752626074755,
+        "routes": 2,
+        "coverage": 50.0
+      },
+      "chosen_quality": 3.0001247948602554,
+      "best_quality_so_far": 3.0001248764668706
+    },
+    {
+      "iteration": 6,
+      "acs_time": {
+        "distance": 2220.663197847842,
+        "routes": 1,
+        "coverage": 50.0
+      },
+      "acs_vehicle": {
+        "distance": 2212.3503317884524,
+        "routes": 1,
+        "coverage": 50.0
+      },
+      "chosen_quality": 1.5002259018795256,
+      "best_quality_so_far": 3.0001248764668706
+    },
+    {
+      "iteration": 7,
+      "acs_time": {
+        "distance": 3979.8686257752443,
+        "routes": 2,
+        "coverage": 50.0
+      },
+      "acs_vehicle": {
+        "distance": 2220.663197847842,
+        "routes": 1,
+        "coverage": 50.0
+      },
+      "chosen_quality": 3.0001256007286354,
+      "best_quality_so_far": 3.0001256007286354
+    },
+    {
+      "iteration": 8,
+      "acs_time": {
+        "distance": 2209.119025401011,
+        "routes": 1,
+        "coverage": 50.0
+      },
+      "acs_vehicle": {
+        "distance": 2209.119025401011,
+        "routes": 1,
+        "coverage": 50.0
+      },
+      "chosen_quality": 1.5002262321595594,
+      "best_quality_so_far": 3.0001256007286354
+    },
+    {
+      "iteration": 9,
+      "acs_time": {
+        "distance": 2220.663197847842,
+        "routes": 1,
+        "coverage": 50.0
+      },
+      "acs_vehicle": {
+        "distance": 1783.6029187903487,
+        "routes": 1,
+        "coverage": 40.0
+      },
+      "chosen_quality": 1.5002250566154602,
+      "best_quality_so_far": 3.0001256007286354
+    },
+    {
+      "iteration": 10,
+      "acs_time": {
+        "distance": 2209.119025401011,
+        "routes": 1,
+        "coverage": 50.0
+      },
+      "acs_vehicle": {
+        "distance": 2220.663197847842,
+        "routes": 1,
+        "coverage": 50.0
+      },
+      "chosen_quality": 1.5002262321595594,
+      "best_quality_so_far": 3.0001256007286354
+    },
+    {
+      "iteration": 11,
+      "acs_time": {
+        "distance": 2220.663197847842,
+        "routes": 1,
+        "coverage": 50.0
+      },
+      "acs_vehicle": {
+        "distance": 2209.119025401011,
+        "routes": 1,
+        "coverage": 50.0
+      },
+      "chosen_quality": 1.5002262321595594,
+      "best_quality_so_far": 3.0001256007286354
+    },
+    {
+      "iteration": 12,
+      "acs_time": {
+        "distance": 3979.8686257752443,
+        "routes": 2,
+        "coverage": 50.0
+      },
+      "acs_vehicle": {
+        "distance": 1782.293772821064,
+        "routes": 1,
+        "coverage": 40.0
+      },
+      "chosen_quality": 3.0001256007286354,
+      "best_quality_so_far": 3.0001256007286354
+    }
+  ]
+}

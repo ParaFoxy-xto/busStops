@@ -1,13 +1,13 @@
 # Relatório de Execução ACS
 
-**Data de Execução:** 17/07/2025 às 22:40:22  
+**Data de Execução:** 18/07/2025 às 06:09:34  
 **Grafo Utilizado:** grafo.graphml
 
 ## Configuração da Execução
 
 ### Coordenadas
 - **Ponto de Partida:** -15.776, -47.8716
-- **Ponto de Chegada:** -15.76111111, -47.87461111
+- **Ponto de Chegada:** -15.7605, -47.8741
 
 ### Parâmetros ACO
 - **Formigas:** 10
@@ -18,9 +18,9 @@
 - **Q:** 1.0
 
 ### Pesos da Função de Qualidade
-- **Cobertura (w_c):** 10.0
-- **Número de Rotas (w_r):** 1.0
-- **Distância (w_d):** 0.5
+- **Cobertura (w_c):** 0.7
+- **Número de Rotas (w_r):** 0.2
+- **Distância (w_d):** 0.1
 
 ## Estatísticas do Grafo
 
@@ -29,15 +29,15 @@
 - **Arestas:** 1485
 
 ### Meta-Grafo
-- **Nós:** 27
-- **Arestas:** 198
+- **Nós:** 26
+- **Arestas:** 194
 
 ## Resultados da Execução
 
 ### Melhor Solução Encontrada
-- **Número de Rotas:** 2
-- **Distância Total:** 6280.76 metros
-- **Cobertura:** 52.00%
+- **Número de Rotas:** 4
+- **Distância Total:** 23089.82 metros
+- **Cobertura:** 75.00%
 
 ### Arquivos Gerados
 - **Visualização da Rota:** `images/acs_route.png`
@@ -47,8 +47,8 @@
 
 ## Conclusões
 
-A execução foi concluída com sucesso, gerando 2 rota(s) 
-que cobrem 52.00% das paradas necessárias.
+A execução foi concluída com sucesso, gerando 4 rota(s) 
+que cobrem 75.00% das paradas necessárias.
 
 ---
 *Relatório gerado automaticamente pelo sistema Rota_ACO*

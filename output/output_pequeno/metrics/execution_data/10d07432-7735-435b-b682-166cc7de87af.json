@@ -1,0 +1,152 @@
+{
+  "execution_id": "10d07432-7735-435b-b682-166cc7de87af",
+  "algorithm_type": "ACS-VEHICLE",
+  "config": {
+    "algorithm_params": {
+      "alpha": 1.0,
+      "beta": 2.0,
+      "rho": 0.1,
+      "Q": 1.0
+    },
+    "problem_params": {
+      "capacity": 30,
+      "max_route_length": 100,
+      "max_route_attempts": 10
+    },
+    "quality_weights": {
+      "w_c": 0.7,
+      "w_r": 0.2,
+      "w_d": 0.1
+    },
+    "n_ants": 10,
+    "n_iterations": 50
+  },
+  "execution_time": 0.03164982795715332,
+  "timestamp": "2025-07-18T05:11:58.217136",
+  "success": true,
+  "error_message": null,
+  "routes": [
+    {
+      "stops": [
+        2705153069,
+        12529762099,
+        12529762088,
+        12529762102,
+        3358644211
+      ],
+      "distances": [
+        745.4035860355835,
+        260.6580715915888,
+        418.719038949723,
+        149.04650832924662
+      ],
+      "passenger_load": [
+        0,
+        10,
+        10,
+        10
+      ],
+      "total_distance": 1573.827204906142,
+      "total_passengers": 30,
+      "is_valid": true,
+      "capacity_violations": 0,
+      "opposite_stops_violations": 0
+    },
+    {
+      "stops": [
+        2705153069,
+        12529762096,
+        12529762099,
+        12529762088,
+        12529762087,
+        3358644211
+      ],
+      "distances": [
+        876.011301684156,
+        307.76170937820564,
+        260.6580715915888,
+        419.6801191588012,
+        150.0075885383248
+      ],
+      "passenger_load": [
+        0,
+        10,
+        10,
+        10,
+        10
+      ],
+      "total_distance": 2014.1187903510763,
+      "total_passengers": 40,
+      "is_valid": false,
+      "capacity_violations": 1,
+      "opposite_stops_violations": 0
+    }
+  ],
+  "iterations_data": [],
+  "final_solution": {
+    "routes": [
+      {
+        "stops": [
+          2705153069,
+          12529762099,
+          12529762088,
+          12529762102,
+          3358644211
+        ],
+        "distances": [
+          745.4035860355835,
+          260.6580715915888,
+          418.719038949723,
+          149.04650832924662
+        ],
+        "passenger_load": [
+          0,
+          10,
+          10,
+          10
+        ],
+        "total_distance": 1573.827204906142,
+        "total_passengers": 30,
+        "is_valid": true,
+        "capacity_violations": 0,
+        "opposite_stops_violations": 0
+      },
+      {
+        "stops": [
+          2705153069,
+          12529762096,
+          12529762099,
+          12529762088,
+          12529762087,
+          3358644211
+        ],
+        "distances": [
+          876.011301684156,
+          307.76170937820564,
+          260.6580715915888,
+          419.6801191588012,
+          150.0075885383248
+        ],
+        "passenger_load": [
+          0,
+          10,
+          10,
+          10,
+          10
+        ],
+        "total_distance": 2014.1187903510763,
+        "total_passengers": 40,
+        "is_valid": false,
+        "capacity_violations": 1,
+        "opposite_stops_violations": 0
+      }
+    ],
+    "total_vehicles": 2,
+    "total_distance": 3587.9459952572183,
+    "total_passengers_served": 70,
+    "fitness_time": 3587.9459952572183,
+    "fitness_vehicle": 5587.945995257218,
+    "is_feasible": false,
+    "generation_time": 0.0
+  }
+}

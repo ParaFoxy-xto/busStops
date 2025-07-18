@@ -1,10 +1,10 @@
 {
-  "analysis_timestamp": "2025-07-17T22:38:36.151134",
-  "total_iterations": 12,
+  "analysis_timestamp": "2025-07-17T23:00:35.049080",
+  "total_iterations": 13,
   "convergence_summary": {
-    "final_best_quality": 3.5002262321595596,
-    "initial_quality": 2.50012551817298,
-    "improvement_percentage": -40.00202016726844
+    "final_best_quality": 3.0001256007286354,
+    "initial_quality": 1.500224885687356,
+    "improvement_percentage": -99.97839186316871
   },
   "acs_time_final": {
     "distance": 3979.8686257752443,
@@ -12,9 +12,9 @@
     "coverage": 50.0
   },
   "acs_vehicle_final": {
-    "distance": 2209.119025401011,
+    "distance": 1782.293772821064,
     "routes": 1,
-    "coverage": 50.0
+    "coverage": 40.0
   },
   "convergence_detection": {
     "converged": true,

@@ -5,21 +5,21 @@
     "lon": -47.8716
   },
   "exit_coordinates": {
-    "lat": -15.7605,
-    "lon": -47.8741
+    "lat": -15.7601,
+    "lon": -47.867
   },
   "aco_parameters": {
     "ants": 10,
-    "iterations": 20,
+    "iterations": 50,
     "alpha": 1.0,
     "beta": 2.0,
     "rho": 0.1,
     "Q": 1.0
   },
   "quality_weights": {
-    "w_c": 10.0,
-    "w_r": 1.0,
-    "w_d": 0.5
+    "w_c": 0.2,
+    "w_r": 0.7,
+    "w_d": 0.1
   },
-  "execution_timestamp": "2025-07-17T22:38:35.305391"
+  "execution_timestamp": "2025-07-18T05:13:37.037574"
 }

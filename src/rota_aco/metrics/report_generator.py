@@ -200,7 +200,7 @@ class ReportGenerator:
 
 ### Interpretação
 
-- **Convergência**: O algoritmo convergiu na iteração {convergence.convergence_point} de {convergence.total_iterations} ({convergence.convergence_point/convergence.total_iterations:.1%} do total)
+- **Convergência**: O algoritmo convergiu na iteração {convergence.convergence_point} de {convergence.total_iterations} ({(convergence.convergence_point/convergence.total_iterations if convergence.total_iterations > 0 else 0):.1%} do total)
 - **Estabilidade**: Valor de {convergence.final_stability:.4f} indica {'alta' if convergence.final_stability < 0.01 else 'moderada' if convergence.final_stability < 0.1 else 'baixa'} estabilidade
 - **Eficiência**: {'Convergência rápida' if convergence.convergence_speed > 0.5 else 'Convergência moderada' if convergence.convergence_speed > 0.2 else 'Convergência lenta'}
 
@@ -327,7 +327,7 @@ class ReportGenerator:
         
         # Análise de convergência
         content += "### Comportamento de Convergência\n\n"
-        convergence_ratio = convergence.convergence_point / convergence.total_iterations
+        convergence_ratio = convergence.convergence_point / convergence.total_iterations if convergence.total_iterations > 0 else 0
         if convergence_ratio < 0.5:
             content += f"✅ **Convergência rápida** na iteração {convergence.convergence_point} ({convergence_ratio:.1%} do total)\n\n"
         elif convergence_ratio < 0.8:
@@ -548,7 +548,7 @@ e algoritmos ACO aplicados ao problema de roteamento de veículos (VRP).
         content += f"({best_fitness.execution_summary.best_overall_fitness:.4f})\n"
         content += f"- **Mais Rápido:** {fastest.execution_summary.algorithm_type} "
         content += f"({fastest.execution_summary.avg_execution_time:.2f}s)\n"
-        content += f"- **Melhor Qualidade:** {best_quality.execution_summary.algorithm_type} "
+        content += f"- **Qualidade Q:** {best_quality.execution_summary.algorithm_type} "
         content += f"({best_quality.quality_metrics.valid_routes_percentage:.1%})\n\n"
         
         # Análise de trade-offs

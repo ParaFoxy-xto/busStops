@@ -1,0 +1,602 @@
+{
+  "graph_file": "graphml/grafo.graphml",
+  "test_config": {
+    "n_runs": 10,
+    "algorithms": [
+      "greedy",
+      "aco",
+      "brute_force"
+    ],
+    "stops_to_visit": [
+      "7302367590",
+      "1327038265",
+      "768959302",
+      "8522466039",
+      "2705153074",
+      "2621459840"
+    ],
+    "start_node": "249729714",
+    "exit_node": "12529762104"
+  },
+  "results": {
+    "greedy": {
+      "statistics": {
+        "total_runs": 10,
+        "successful_runs": 10,
+        "success_rate": 1.0,
+        "distance": {
+          "mean": 8926.995998988315,
+          "median": 8926.995998988315,
+          "stdev": 0.0,
+          "min": 8926.995998988315,
+          "max": 8926.995998988315,
+          "valid_results": 10,
+          "invalid_results": 0
+        },
+        "execution_time": {
+          "mean": 0.014998793601989746,
+          "median": 0.014925479888916016,
+          "stdev": 0.00027974998064999814,
+          "min": 0.014737844467163086,
+          "max": 0.0157315731048584
+        },
+        "coverage": {
+          "mean": 1.0,
+          "median": 1.0,
+          "stdev": 0.0,
+          "min": 1.0,
+          "max": 1.0
+        }
+      },
+      "config_used": {},
+      "successful_runs": [
+        {
+          "run_id": 1,
+          "success": true,
+          "distance": 8926.995998988315,
+          "coverage": 1.0,
+          "execution_time": 0.0157315731048584,
+          "route_length": 484,
+          "algorithm_stats": {
+            "total_distance": 8926.995998988315,
+            "coverage": 1.0,
+            "route_length": 484,
+            "execution_time": 0.015618085861206055,
+            "algorithm": "greedy"
+          }
+        },
+        {
+          "run_id": 2,
+          "success": true,
+          "distance": 8926.995998988315,
+          "coverage": 1.0,
+          "execution_time": 0.015117883682250977,
+          "route_length": 484,
+          "algorithm_stats": {
+            "total_distance": 8926.995998988315,
+            "coverage": 1.0,
+            "route_length": 484,
+            "execution_time": 0.015005111694335938,
+            "algorithm": "greedy"
+          }
+        },
+        {
+          "run_id": 3,
+          "success": true,
+          "distance": 8926.995998988315,
+          "coverage": 1.0,
+          "execution_time": 0.014737844467163086,
+          "route_length": 484,
+          "algorithm_stats": {
+            "total_distance": 8926.995998988315,
+            "coverage": 1.0,
+            "route_length": 484,
+            "execution_time": 0.014631032943725586,
+            "algorithm": "greedy"
+          }
+        },
+        {
+          "run_id": 4,
+          "success": true,
+          "distance": 8926.995998988315,
+          "coverage": 1.0,
+          "execution_time": 0.014933109283447266,
+          "route_length": 484,
+          "algorithm_stats": {
+            "total_distance": 8926.995998988315,
+            "coverage": 1.0,
+            "route_length": 484,
+            "execution_time": 0.014824628829956055,
+            "algorithm": "greedy"
+          }
+        },
+        {
+          "run_id": 5,
+          "success": true,
+          "distance": 8926.995998988315,
+          "coverage": 1.0,
+          "execution_time": 0.014806509017944336,
+          "route_length": 484,
+          "algorithm_stats": {
+            "total_distance": 8926.995998988315,
+            "coverage": 1.0,
+            "route_length": 484,
+            "execution_time": 0.01469874382019043,
+            "algorithm": "greedy"
+          }
+        },
+        {
+          "run_id": 6,
+          "success": true,
+          "distance": 8926.995998988315,
+          "coverage": 1.0,
+          "execution_time": 0.01504063606262207,
+          "route_length": 484,
+          "algorithm_stats": {
+            "total_distance": 8926.995998988315,
+            "coverage": 1.0,
+            "route_length": 484,
+            "execution_time": 0.014934301376342773,
+            "algorithm": "greedy"
+          }
+        },
+        {
+          "run_id": 7,
+          "success": true,
+          "distance": 8926.995998988315,
+          "coverage": 1.0,
+          "execution_time": 0.014870882034301758,
+          "route_length": 484,
+          "algorithm_stats": {
+            "total_distance": 8926.995998988315,
+            "coverage": 1.0,
+            "route_length": 484,
+            "execution_time": 0.014763593673706055,
+            "algorithm": "greedy"
+          }
+        },
+        {
+          "run_id": 8,
+          "success": true,
+          "distance": 8926.995998988315,
+          "coverage": 1.0,
+          "execution_time": 0.014863967895507812,
+          "route_length": 484,
+          "algorithm_stats": {
+            "total_distance": 8926.995998988315,
+            "coverage": 1.0,
+            "route_length": 484,
+            "execution_time": 0.014755964279174805,
+            "algorithm": "greedy"
+          }
+        },
+        {
+          "run_id": 9,
+          "success": true,
+          "distance": 8926.995998988315,
+          "coverage": 1.0,
+          "execution_time": 0.014967679977416992,
+          "route_length": 484,
+          "algorithm_stats": {
+            "total_distance": 8926.995998988315,
+            "coverage": 1.0,
+            "route_length": 484,
+            "execution_time": 0.014862060546875,
+            "algorithm": "greedy"
+          }
+        },
+        {
+          "run_id": 10,
+          "success": true,
+          "distance": 8926.995998988315,
+          "coverage": 1.0,
+          "execution_time": 0.014917850494384766,
+          "route_length": 484,
+          "algorithm_stats": {
+            "total_distance": 8926.995998988315,
+            "coverage": 1.0,
+            "route_length": 484,
+            "execution_time": 0.01481175422668457,
+            "algorithm": "greedy"
+          }
+        }
+      ]
+    },
+    "aco": {
+      "statistics": {
+        "total_runs": 10,
+        "successful_runs": 10,
+        "success_rate": 1.0,
+        "distance": {
+          "mean": Infinity,
+          "median": Infinity,
+          "stdev": 0.0,
+          "min": Infinity,
+          "max": Infinity,
+          "valid_results": 0,
+          "invalid_results": 10
+        },
+        "execution_time": {
+          "mean": 0.07704315185546876,
+          "median": 0.07658255100250244,
+          "stdev": 0.001667234870018064,
+          "min": 0.07596898078918457,
+          "max": 0.08169937133789062
+        },
+        "coverage": {
+          "mean": 0.0,
+          "median": 0.0,
+          "stdev": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        }
+      },
+      "config_used": {
+        "n_ants": 10,
+        "n_iterations": 50,
+        "alpha": 1.0,
+        "beta": 2.0,
+        "rho": 0.1,
+        "q_param": 1.0
+      },
+      "successful_runs": [
+        {
+          "run_id": 1,
+          "success": true,
+          "distance": Infinity,
+          "coverage": 0.0,
+          "execution_time": 0.07702183723449707,
+          "route_length": 0,
+          "algorithm_stats": {
+            "total_distance": Infinity,
+            "coverage": 0.0,
+            "route_length": 0,
+            "iterations": 50,
+            "ants_per_iteration": 10
+          }
+        },
+        {
+          "run_id": 2,
+          "success": true,
+          "distance": Infinity,
+          "coverage": 0.0,
+          "execution_time": 0.07673430442810059,
+          "route_length": 0,
+          "algorithm_stats": {
+            "total_distance": Infinity,
+            "coverage": 0.0,
+            "route_length": 0,
+            "iterations": 50,
+            "ants_per_iteration": 10
+          }
+        },
+        {
+          "run_id": 3,
+          "success": true,
+          "distance": Infinity,
+          "coverage": 0.0,
+          "execution_time": 0.07617735862731934,
+          "route_length": 0,
+          "algorithm_stats": {
+            "total_distance": Infinity,
+            "coverage": 0.0,
+            "route_length": 0,
+            "iterations": 50,
+            "ants_per_iteration": 10
+          }
+        },
+        {
+          "run_id": 4,
+          "success": true,
+          "distance": Infinity,
+          "coverage": 0.0,
+          "execution_time": 0.07651782035827637,
+          "route_length": 0,
+          "algorithm_stats": {
+            "total_distance": Infinity,
+            "coverage": 0.0,
+            "route_length": 0,
+            "iterations": 50,
+            "ants_per_iteration": 10
+          }
+        },
+        {
+          "run_id": 5,
+          "success": true,
+          "distance": Infinity,
+          "coverage": 0.0,
+          "execution_time": 0.07596898078918457,
+          "route_length": 0,
+          "algorithm_stats": {
+            "total_distance": Infinity,
+            "coverage": 0.0,
+            "route_length": 0,
+            "iterations": 50,
+            "ants_per_iteration": 10
+          }
+        },
+        {
+          "run_id": 6,
+          "success": true,
+          "distance": Infinity,
+          "coverage": 0.0,
+          "execution_time": 0.07634496688842773,
+          "route_length": 0,
+          "algorithm_stats": {
+            "total_distance": Infinity,
+            "coverage": 0.0,
+            "route_length": 0,
+            "iterations": 50,
+            "ants_per_iteration": 10
+          }
+        },
+        {
+          "run_id": 7,
+          "success": true,
+          "distance": Infinity,
+          "coverage": 0.0,
+          "execution_time": 0.07690811157226562,
+          "route_length": 0,
+          "algorithm_stats": {
+            "total_distance": Infinity,
+            "coverage": 0.0,
+            "route_length": 0,
+            "iterations": 50,
+            "ants_per_iteration": 10
+          }
+        },
+        {
+          "run_id": 8,
+          "success": true,
+          "distance": Infinity,
+          "coverage": 0.0,
+          "execution_time": 0.07664728164672852,
+          "route_length": 0,
+          "algorithm_stats": {
+            "total_distance": Infinity,
+            "coverage": 0.0,
+            "route_length": 0,
+            "iterations": 50,
+            "ants_per_iteration": 10
+          }
+        },
+        {
+          "run_id": 9,
+          "success": true,
+          "distance": Infinity,
+          "coverage": 0.0,
+          "execution_time": 0.07641148567199707,
+          "route_length": 0,
+          "algorithm_stats": {
+            "total_distance": Infinity,
+            "coverage": 0.0,
+            "route_length": 0,
+            "iterations": 50,
+            "ants_per_iteration": 10
+          }
+        },
+        {
+          "run_id": 10,
+          "success": true,
+          "distance": Infinity,
+          "coverage": 0.0,
+          "execution_time": 0.08169937133789062,
+          "route_length": 0,
+          "algorithm_stats": {
+            "total_distance": Infinity,
+            "coverage": 0.0,
+            "route_length": 0,
+            "iterations": 50,
+            "ants_per_iteration": 10
+          }
+        }
+      ]
+    },
+    "brute_force": {
+      "statistics": {
+        "total_runs": 10,
+        "successful_runs": 10,
+        "success_rate": 1.0,
+        "distance": {
+          "mean": 8371.588447293572,
+          "median": 8371.588447293572,
+          "stdev": 0.0,
+          "min": 8371.588447293572,
+          "max": 8371.588447293572,
+          "valid_results": 10,
+          "invalid_results": 0
+        },
+        "execution_time": {
+          "mean": 2.669990396499634,
+          "median": 2.668890357017517,
+          "stdev": 0.016615790896096376,
+          "min": 2.6394636631011963,
+          "max": 2.690387487411499
+        },
+        "coverage": {
+          "mean": 1.0,
+          "median": 1.0,
+          "stdev": 0.0,
+          "min": 1.0,
+          "max": 1.0
+        }
+      },
+      "config_used": {
+        "max_permutations": 10000,
+        "max_time_seconds": 60.0
+      },
+      "successful_runs": [
+        {
+          "run_id": 1,
+          "success": true,
+          "distance": 8371.588447293572,
+          "coverage": 1.0,
+          "execution_time": 2.6649625301361084,
+          "route_length": 411,
+          "algorithm_stats": {
+            "total_distance": 8371.588447293572,
+            "coverage": 1.0,
+            "route_length": 411,
+            "routes_tested": 720,
+            "valid_routes": 720,
+            "execution_time": 2.6649093627929688,
+            "success_rate": 1.0
+          }
+        },
+        {
+          "run_id": 2,
+          "success": true,
+          "distance": 8371.588447293572,
+          "coverage": 1.0,
+          "execution_time": 2.6510627269744873,
+          "route_length": 411,
+          "algorithm_stats": {
+            "total_distance": 8371.588447293572,
+            "coverage": 1.0,
+            "route_length": 411,
+            "routes_tested": 720,
+            "valid_routes": 720,
+            "execution_time": 2.6510143280029297,
+            "success_rate": 1.0
+          }
+        },
+        {
+          "run_id": 3,
+          "success": true,
+          "distance": 8371.588447293572,
+          "coverage": 1.0,
+          "execution_time": 2.672818183898926,
+          "route_length": 411,
+          "algorithm_stats": {
+            "total_distance": 8371.588447293572,
+            "coverage": 1.0,
+            "route_length": 411,
+            "routes_tested": 720,
+            "valid_routes": 720,
+            "execution_time": 2.6727750301361084,
+            "success_rate": 1.0
+          }
+        },
+        {
+          "run_id": 4,
+          "success": true,
+          "distance": 8371.588447293572,
+          "coverage": 1.0,
+          "execution_time": 2.6648671627044678,
+          "route_length": 411,
+          "algorithm_stats": {
+            "total_distance": 8371.588447293572,
+            "coverage": 1.0,
+            "route_length": 411,
+            "routes_tested": 720,
+            "valid_routes": 720,
+            "execution_time": 2.664823055267334,
+            "success_rate": 1.0
+          }
+        },
+        {
+          "run_id": 5,
+          "success": true,
+          "distance": 8371.588447293572,
+          "coverage": 1.0,
+          "execution_time": 2.6394636631011963,
+          "route_length": 411,
+          "algorithm_stats": {
+            "total_distance": 8371.588447293572,
+            "coverage": 1.0,
+            "route_length": 411,
+            "routes_tested": 720,
+            "valid_routes": 720,
+            "execution_time": 2.6394219398498535,
+            "success_rate": 1.0
+          }
+        },
+        {
+          "run_id": 6,
+          "success": true,
+          "distance": 8371.588447293572,
+          "coverage": 1.0,
+          "execution_time": 2.6645586490631104,
+          "route_length": 411,
+          "algorithm_stats": {
+            "total_distance": 8371.588447293572,
+            "coverage": 1.0,
+            "route_length": 411,
+            "routes_tested": 720,
+            "valid_routes": 720,
+            "execution_time": 2.6645150184631348,
+            "success_rate": 1.0
+          }
+        },
+        {
+          "run_id": 7,
+          "success": true,
+          "distance": 8371.588447293572,
+          "coverage": 1.0,
+          "execution_time": 2.690387487411499,
+          "route_length": 411,
+          "algorithm_stats": {
+            "total_distance": 8371.588447293572,
+            "coverage": 1.0,
+            "route_length": 411,
+            "routes_tested": 720,
+            "valid_routes": 720,
+            "execution_time": 2.690343141555786,
+            "success_rate": 1.0
+          }
+        },
+        {
+          "run_id": 8,
+          "success": true,
+          "distance": 8371.588447293572,
+          "coverage": 1.0,
+          "execution_time": 2.6759049892425537,
+          "route_length": 411,
+          "algorithm_stats": {
+            "total_distance": 8371.588447293572,
+            "coverage": 1.0,
+            "route_length": 411,
+            "routes_tested": 720,
+            "valid_routes": 720,
+            "execution_time": 2.67586088180542,
+            "success_rate": 1.0
+          }
+        },
+        {
+          "run_id": 9,
+          "success": true,
+          "distance": 8371.588447293572,
+          "coverage": 1.0,
+          "execution_time": 2.685675859451294,
+          "route_length": 411,
+          "algorithm_stats": {
+            "total_distance": 8371.588447293572,
+            "coverage": 1.0,
+            "route_length": 411,
+            "routes_tested": 720,
+            "valid_routes": 720,
+            "execution_time": 2.685600757598877,
+            "success_rate": 1.0
+          }
+        },
+        {
+          "run_id": 10,
+          "success": true,
+          "distance": 8371.588447293572,
+          "coverage": 1.0,
+          "execution_time": 2.6902027130126953,
+          "route_length": 411,
+          "algorithm_stats": {
+            "total_distance": 8371.588447293572,
+            "coverage": 1.0,
+            "route_length": 411,
+            "routes_tested": 720,
+            "valid_routes": 720,
+            "execution_time": 2.6901562213897705,
+            "success_rate": 1.0
+          }
+        }
+      ]
+    }
+  }
+}

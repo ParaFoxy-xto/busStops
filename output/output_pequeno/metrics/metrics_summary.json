@@ -1,13 +1,13 @@
 {
   "execution_metrics": {
-    "total_routes": 1,
-    "total_distance_meters": 2209.119025401011,
+    "total_routes": 2,
+    "total_distance_meters": 3421.3153158473133,
     "coverage_percentage": 50.0,
-    "execution_timestamp": "2025-07-17T22:38:35.306508"
+    "execution_timestamp": "2025-07-18T05:13:37.038552"
   },
   "quality_indicators": {
     "routes_efficiency": "Good",
     "coverage_quality": "Needs Improvement",
-    "distance_efficiency": 2209.119025401011
+    "distance_efficiency": 1710.6576579236566
   }
 }

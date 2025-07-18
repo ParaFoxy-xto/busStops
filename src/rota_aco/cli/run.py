@@ -588,7 +588,7 @@ def generate_metrics_reports(execution_data_list, metrics_config, args):
         
         # Gerar visualizações se habilitadas
         if metrics_config.enable_visualizations:
-            viz_engine = VisualizationEngine(metrics_config)
+            viz_engine = VisualizationEngine(metrics_config.base_output_dir)
             
             for i, execution_data in enumerate(successful_executions):
                 if execution_data.iterations_data:
@@ -881,6 +881,69 @@ def analyze_route_validity(routes: List[Any], opposites: Dict[Any, List[Any]], c
     return violations
 
 
+def generate_detailed_iteration_log(output_dirs: dict, controller_history: List[Dict]):
+    """
+    Gera log detalhado de cada iteração para debug.
+    
+    Args:
+        output_dirs: Dicionário com caminhos dos diretórios
+        controller_history: Histórico do controller
+    """
+    import json
+    from datetime import datetime
+    
+    if not controller_history:
+        return
+    
+    # Criar log detalhado
+    detailed_log = {
+        'analysis_timestamp': datetime.now().isoformat(),
+        'iterations_detail': []
+    }
+    
+    print("\n=== DEBUG: ANÁLISE DETALHADA POR ITERAÇÃO ===")
+    
+    for i, entry in enumerate(controller_history):
+        iteration_data = {
+            'iteration': entry['iteration'],
+            'acs_time': {
+                'distance': entry['time_metrics']['dist'],
+                'routes': entry['time_metrics']['count'],
+                'coverage': entry['time_metrics']['coverage'] * 100
+            },
+            'acs_vehicle': {
+                'distance': entry['vehicle_metrics']['dist'],
+                'routes': entry['vehicle_metrics']['count'],
+                'coverage': entry['vehicle_metrics']['coverage'] * 100
+            },
+            'chosen_quality': entry['chosen_quality'],
+            'best_quality_so_far': entry['best_quality_so_far']
+        }
+        
+        detailed_log['iterations_detail'].append(iteration_data)
+        
+        # Print debug info
+        print(f"\n--- ITERAÇÃO {entry['iteration']} ---")
+        print(f"ACS-TIME:    {entry['time_metrics']['count']} rotas, {entry['time_metrics']['coverage']*100:.1f}% cobertura, {entry['time_metrics']['dist']:.1f}m")
+        print(f"ACS-VEHICLE: {entry['vehicle_metrics']['count']} rotas, {entry['vehicle_metrics']['coverage']*100:.1f}% cobertura, {entry['vehicle_metrics']['dist']:.1f}m")
+        print(f"Qualidade Escolhida: {entry['chosen_quality']:.4f}")
+        print(f"Melhor Global: {entry['best_quality_so_far']:.4f}")
+        
+        # Identificar qual foi escolhido
+        time_better = (entry['time_metrics']['coverage'] > entry['vehicle_metrics']['coverage'] or 
+                      (entry['time_metrics']['coverage'] == entry['vehicle_metrics']['coverage'] and 
+                       entry['time_metrics']['count'] <= entry['vehicle_metrics']['count']))
+        chosen = "ACS-TIME" if time_better else "ACS-VEHICLE"
+        print(f"Aparentemente escolhido: {chosen}")
+    
+    # Salvar log detalhado
+    debug_log_path = os.path.join(output_dirs['data'], 'detailed_iteration_log.json')
+    with open(debug_log_path, 'w', encoding='utf-8') as f:
+        json.dump(detailed_log, f, indent=2, ensure_ascii=False)
+    
+    print(f"\n=== Log detalhado salvo em: {debug_log_path} ===")
+
+
 def generate_convergence_analysis(output_dirs: dict, controller_history: List[Dict], opposites: Dict, capacity: int = 70):
     """
     Gera análise detalhada de convergência com gráficos e dados de rotas inválidas.
@@ -899,14 +962,19 @@ def generate_convergence_analysis(output_dirs: dict, controller_history: List[Di
         print("Nenhum histórico de convergência disponível.")
         return
     
+    # Gerar log detalhado primeiro
+    generate_detailed_iteration_log(output_dirs, controller_history)
+    
     # Extrair dados para análise
     iterations = []
     time_distances = []
     time_routes = []
     time_coverage = []
+    time_invalid_routes = []
     vehicle_distances = []
     vehicle_routes = []
     vehicle_coverage = []
+    vehicle_invalid_routes = []
     best_quality = []
     
     for entry in controller_history:
@@ -918,10 +986,25 @@ def generate_convergence_analysis(output_dirs: dict, controller_history: List[Di
         vehicle_routes.append(entry['vehicle_metrics']['count'])
         vehicle_coverage.append(entry['vehicle_metrics']['coverage'])
         best_quality.append(entry['best_quality_so_far'])
+        
+        # Calcular rotas inválidas (estimativa baseada na cobertura)
+        time_invalid = max(0, time_routes[-1] - int(time_coverage[-1] * time_routes[-1]))
+        vehicle_invalid = max(0, vehicle_routes[-1] - int(vehicle_coverage[-1] * vehicle_routes[-1]))
+        time_invalid_routes.append(time_invalid)
+        vehicle_invalid_routes.append(vehicle_invalid)
     
-    # Criar gráficos de convergência
-    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 12))
-    fig.suptitle('Análise de Convergência ACS-TIME vs ACS-VEHICLE', fontsize=16, fontweight='bold')
+    # Criar gráficos de convergência expandidos
+    fig = plt.figure(figsize=(20, 15))
+    
+    # Layout: 3x2 grid
+    ax1 = plt.subplot(3, 2, 1)
+    ax2 = plt.subplot(3, 2, 2)
+    ax3 = plt.subplot(3, 2, 3)
+    ax4 = plt.subplot(3, 2, 4)
+    ax5 = plt.subplot(3, 2, 5)
+    ax6 = plt.subplot(3, 2, 6)
+    
+    fig.suptitle('Análise de Convergência ACS-TIME vs ACS-VEHICLE', fontsize=18, fontweight='bold')
     
     # Gráfico 1: Distância Total
     ax1.plot(iterations, time_distances, 'b-', label='ACS-TIME', linewidth=2, marker='o', markersize=4)
@@ -950,13 +1033,34 @@ def generate_convergence_analysis(output_dirs: dict, controller_history: List[Di
     ax3.legend()
     ax3.grid(True, alpha=0.3)
     
-    # Gráfico 4: Melhor Qualidade Geral
-    ax4.plot(iterations, best_quality, 'g-', label='Melhor Qualidade', linewidth=3, marker='D', markersize=5)
+    # Gráfico 4: Rotas Inválidas
+    ax4.plot(iterations, time_invalid_routes, 'b-', label='ACS-TIME', linewidth=2, marker='o', markersize=4)
+    ax4.plot(iterations, vehicle_invalid_routes, 'r-', label='ACS-VEHICLE', linewidth=2, marker='s', markersize=4)
     ax4.set_xlabel('Iteração')
-    ax4.set_ylabel('Qualidade')
-    ax4.set_title('Convergência da Melhor Qualidade')
+    ax4.set_ylabel('Número de Rotas Inválidas')
+    ax4.set_title('Evolução das Rotas Inválidas')
     ax4.legend()
     ax4.grid(True, alpha=0.3)
+    
+    # Gráfico 5: Qualidade Q
+    ax5.plot(iterations, best_quality, 'g-', label='Qualidade Q', linewidth=3, marker='D', markersize=5)
+    ax5.set_xlabel('Iteração')
+    ax5.set_ylabel('Qualidade Q')
+    ax5.set_title('Convergência da Qualidade Q')
+    ax5.legend()
+    ax5.grid(True, alpha=0.3)
+    
+    # Gráfico 6: Taxa de Rotas Válidas
+    time_valid_rate = [(1 - inv/max(1, total)) * 100 for inv, total in zip(time_invalid_routes, time_routes)]
+    vehicle_valid_rate = [(1 - inv/max(1, total)) * 100 for inv, total in zip(vehicle_invalid_routes, vehicle_routes)]
+    
+    ax6.plot(iterations, time_valid_rate, 'b-', label='ACS-TIME', linewidth=2, marker='o', markersize=4)
+    ax6.plot(iterations, vehicle_valid_rate, 'r-', label='ACS-VEHICLE', linewidth=2, marker='s', markersize=4)
+    ax6.set_xlabel('Iteração')
+    ax6.set_ylabel('Taxa de Rotas Válidas (%)')
+    ax6.set_title('Evolução da Taxa de Rotas Válidas')
+    ax6.legend()
+    ax6.grid(True, alpha=0.3)
     
     plt.tight_layout()
     
@@ -965,24 +1069,55 @@ def generate_convergence_analysis(output_dirs: dict, controller_history: List[Di
     plt.savefig(convergence_plot_path, dpi=300, bbox_inches='tight')
     plt.close()
     
+    # Gerar visualização adicional com rotas inválidas
+    try:
+        from rota_aco.viz.convergence_with_invalid_routes import ConvergenceInvalidRoutesVisualizer
+        
+        visualizer = ConvergenceInvalidRoutesVisualizer(output_dirs['images'])
+        
+        # Gráfico principal com rotas inválidas
+        main_plot_path = visualizer.generate_convergence_with_invalid_routes_plot(
+            controller_history,
+            title="Análise de Convergência ACS com Rotas Inválidas"
+        )
+        print(f"Gráfico de convergência com rotas inválidas salvo em: {main_plot_path}")
+        
+        # Análise detalhada de rotas inválidas
+        detailed_plot_path = visualizer.generate_detailed_invalid_routes_analysis(
+            controller_history
+        )
+        print(f"Análise detalhada de rotas inválidas salva em: {detailed_plot_path}")
+        
+    except ImportError as e:
+        print(f"Aviso: Não foi possível gerar gráficos avançados de rotas inválidas: {e}")
+    except Exception as e:
+        print(f"Erro ao gerar visualizações de rotas inválidas: {e}")
+    
     # Análise de convergência
     convergence_data = {
         'analysis_timestamp': datetime.now().isoformat(),
         'total_iterations': len(iterations),
         'convergence_summary': {
-            'final_best_quality': best_quality[-1] if best_quality else 0,
-            'initial_quality': best_quality[0] if best_quality else 0,
+            'final_quality_q': best_quality[-1] if best_quality else 0,
+            'initial_quality_q': best_quality[0] if best_quality else 0,
             'improvement_percentage': ((best_quality[0] - best_quality[-1]) / best_quality[0] * 100) if best_quality and best_quality[0] > 0 else 0
+        },
+        'invalid_routes_summary': {
+            'time_avg_invalid': sum(time_invalid_routes) / len(time_invalid_routes) if time_invalid_routes else 0,
+            'vehicle_avg_invalid': sum(vehicle_invalid_routes) / len(vehicle_invalid_routes) if vehicle_invalid_routes else 0,
+            'total_avg_invalid': (sum(time_invalid_routes) + sum(vehicle_invalid_routes)) / (len(time_invalid_routes) + len(vehicle_invalid_routes)) if time_invalid_routes and vehicle_invalid_routes else 0
         },
         'acs_time_final': {
             'distance': time_distances[-1] if time_distances else 0,
             'routes': time_routes[-1] if time_routes else 0,
-            'coverage': time_coverage[-1] * 100 if time_coverage else 0
+            'coverage': time_coverage[-1] * 100 if time_coverage else 0,
+            'invalid_routes': time_invalid_routes[-1] if time_invalid_routes else 0
         },
         'acs_vehicle_final': {
             'distance': vehicle_distances[-1] if vehicle_distances else 0,
             'routes': vehicle_routes[-1] if vehicle_routes else 0,
-            'coverage': vehicle_coverage[-1] * 100 if vehicle_coverage else 0
+            'coverage': vehicle_coverage[-1] * 100 if vehicle_coverage else 0,
+            'invalid_routes': vehicle_invalid_routes[-1] if vehicle_invalid_routes else 0
         },
         'convergence_detection': {
             'converged': len(set(best_quality[-5:])) <= 2 if len(best_quality) >= 5 else False,
@@ -1113,6 +1248,9 @@ def main():
     aco_params = {'alpha': args.alpha, 'beta': args.beta, 'rho': args.rho, 'Q': args.Q}
     problem_params = {'capacity': args.capacity, 'max_route_length': args.max_route_length, 'max_route_attempts': args.max_route_attempts}
     quality_weights = {'w_c': args.w_c, 'w_r': args.w_r, 'w_d': args.w_d}
+    
+    # Initialize controller to None - will be set only in traditional execution path
+    controller = None
     
     # Verificar se métricas estão habilitadas
     if args.metrics or args.compare_runs or args.convergence_analysis:

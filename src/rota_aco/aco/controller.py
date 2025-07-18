@@ -128,7 +128,12 @@ class ACSController:
         if not routes: return -float('inf')
         dist, count, coverage = self._get_solution_metrics(routes)
         normalized_dist_penalty = dist / (1 + dist)
-        quality = (w_c * coverage) - (w_r * count) - (w_d * normalized_dist_penalty)
+        
+        # Penalidade por número de rotas com sweet spot em 3 rotas
+        optimal_routes = 3
+        route_penalty = w_r * abs(count - optimal_routes)
+        
+        quality = (w_c * coverage) - route_penalty - (w_d * normalized_dist_penalty)
         return quality
 
     def _update_pheromones(self, routes: List[List[Any]], quality: float):

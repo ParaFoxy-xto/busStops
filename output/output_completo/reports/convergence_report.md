@@ -1,22 +1,22 @@
 # Análise de Convergência ACS
 
-**Data da Análise:** 17/07/2025 às 22:40:23  
-**Total de Iterações:** 7
+**Data da Análise:** 17/07/2025 às 23:04:08  
+**Total de Iterações:** 10
 
 ## Resumo da Convergência
 
 ### Qualidade Final
 - **Qualidade Inicial:** 1.70
-- **Qualidade Final:** 2.70
-- **Melhoria:** -58.82%
+- **Qualidade Final:** 5.10
+- **Melhoria:** -199.99%
 
 ### ACS-TIME (Final)
-- **Distância:** 8522.41m
-- **Rotas:** 3
+- **Distância:** 5875.97m
+- **Rotas:** 2
 - **Cobertura:** 52.00%
 
 ### ACS-VEHICLE (Final)
-- **Distância:** 3028.08m
+- **Distância:** 3028.46m
 - **Rotas:** 1
 - **Cobertura:** 32.00%
 

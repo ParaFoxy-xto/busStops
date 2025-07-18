@@ -5,8 +5,8 @@
     "lon": -47.8716
   },
   "exit_coordinates": {
-    "lat": -15.76111111,
-    "lon": -47.87461111
+    "lat": -15.7605,
+    "lon": -47.8741
   },
   "aco_parameters": {
     "ants": 10,
@@ -17,9 +17,9 @@
     "Q": 1.0
   },
   "quality_weights": {
-    "w_c": 10.0,
-    "w_r": 1.0,
-    "w_d": 0.5
+    "w_c": 0.7,
+    "w_r": 0.2,
+    "w_d": 0.1
   },
-  "execution_timestamp": "2025-07-17T22:40:22.558884"
+  "execution_timestamp": "2025-07-18T06:09:34.017624"
 }

@@ -1,187 +1,313 @@
-#!/usr/bin/env python3
-"""
-Demonstração das funcionalidades de métricas no CLI.
+# examples/cli_metrics_demo.py
 
-Este script mostra exemplos de como usar os novos flags de métricas
-na interface de linha de comando do Rota_ACO.
+"""
+Demonstração via linha de comando para comparar algoritmos com métricas detalhadas.
+
+Este script permite testar os algoritmos com diferentes configurações e
+gerar relatórios detalhados de performance.
 """
 
-import os
 import sys
-import subprocess
-import tempfile
+import time
+import json
+import argparse
+from pathlib import Path
 
-def run_command(cmd, description):
-    """Executa um comando e mostra o resultado."""
-    print(f"\n{'='*60}")
-    print(f"DEMONSTRAÇÃO: {description}")
-    print(f"{'='*60}")
-    print(f"Comando: {' '.join(cmd)}")
-    print("-" * 60)
+# Adicionar o diretório src ao path
+sys.path.insert(0, str(Path(__file__).parent.parent / 'src'))
+
+from rota_aco.aco.simple_aco import SimpleACO
+from rota_aco.aco.brute_force import BruteForceOptimizer, GreedyOptimizer
+from rota_aco.graph.loader import GraphLoader
+
+
+def create_complex_test_graph():
+    """
+    Cria um grafo mais complexo para testes.
+    """
+    import networkx as nx
     
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
-        if result.returncode == 0:
-            print("✅ Comando executado com sucesso!")
-            if result.stdout:
-                print("Saída:")
-                print(result.stdout[:500] + "..." if len(result.stdout) > 500 else result.stdout)
+    graph = nx.DiGraph()
+    
+    # Criar uma grade 4x4 de nós
+    nodes = []
+    for i in range(4):
+        for j in range(4):
+            node = f"N{i}{j}"
+            nodes.append(node)
+            graph.add_node(node, x=j, y=i)
+    
+    # Conectar nós adjacentes com pesos variados
+    meta_edges = {}
+    
+    for i in range(4):
+        for j in range(4):
+            current = f"N{i}{j}"
+            
+            # Conectar para a direita
+            if j < 3:
+                right = f"N{i}{j+1}"
+                weight = 1.0 + (i * 0.5) + (j * 0.3)  # Pesos variados
+                graph.add_edge(current, right, weight=weight)
+                graph.add_edge(right, current, weight=weight * 1.2)  # Assimétrico
+                meta_edges[(current, right)] = {'time': weight, 'distance': weight}
+                meta_edges[(right, current)] = {'time': weight * 1.2, 'distance': weight * 1.2}
+            
+            # Conectar para baixo
+            if i < 3:
+                down = f"N{i+1}{j}"
+                weight = 1.2 + (i * 0.3) + (j * 0.4)
+                graph.add_edge(current, down, weight=weight)
+                graph.add_edge(down, current, weight=weight * 1.1)
+                meta_edges[(current, down)] = {'time': weight, 'distance': weight}
+                meta_edges[(down, current)] = {'time': weight * 1.1, 'distance': weight * 1.1}
+            
+            # Adicionar algumas conexões diagonais
+            if i < 3 and j < 3:
+                diag = f"N{i+1}{j+1}"
+                weight = 1.8 + (i * 0.2)
+                graph.add_edge(current, diag, weight=weight)
+                meta_edges[(current, diag)] = {'time': weight, 'distance': weight}
+    
+    return graph, meta_edges, nodes
+
+
+def run_algorithm_test(algorithm_name, graph, meta_edges, stops_to_visit, start_node, exit_node, config):
+    """
+    Executa um algoritmo específico e retorna os resultados.
+    """
+    print(f"\n=== {algorithm_name.upper()} ===")
+    
+    start_time = time.time()
+    
+    if algorithm_name == 'aco':
+        algo = SimpleACO(
+            graph=graph,
+            meta_edges=meta_edges,
+            stops_to_visit=stops_to_visit,
+            start_node=start_node,
+            exit_node=exit_node,
+            alpha=config.get('alpha', 1.0),
+            beta=config.get('beta', 2.0),
+            rho=config.get('rho', 0.1),
+            q_param=config.get('q_param', 1.0)
+        )
+        
+        route, distance, stats = algo.run(
+            n_ants=config.get('n_ants', 10),
+            n_iterations=config.get('n_iterations', 50),
+            verbose=config.get('verbose', False)
+        )
+        
+    elif algorithm_name == 'brute_force':
+        algo = BruteForceOptimizer(
+            graph=graph,
+            meta_edges=meta_edges,
+            stops_to_visit=stops_to_visit,
+            start_node=start_node,
+            exit_node=exit_node,
+            max_permutations=config.get('max_permutations', 5000)
+        )
+        
+        if config.get('time_limit'):
+            route, distance, stats = algo.run_limited(
+                max_time_seconds=config['time_limit'],
+                verbose=config.get('verbose', False)
+            )
         else:
-            print("❌ Comando falhou!")
-            if result.stderr:
-                print("Erro:")
-                print(result.stderr[:500] + "..." if len(result.stderr) > 500 else result.stderr)
-    except subprocess.TimeoutExpired:
-        print("⏰ Comando expirou (timeout)")
-    except Exception as e:
-        print(f"❌ Erro ao executar comando: {e}")
+            route, distance, stats = algo.run(verbose=config.get('verbose', False))
+            
+    elif algorithm_name == 'greedy':
+        algo = GreedyOptimizer(
+            graph=graph,
+            meta_edges=meta_edges,
+            stops_to_visit=stops_to_visit,
+            start_node=start_node,
+            exit_node=exit_node
+        )
+        
+        route, distance, stats = algo.run(verbose=config.get('verbose', False))
+    
+    else:
+        raise ValueError(f"Algoritmo desconhecido: {algorithm_name}")
+    
+    execution_time = time.time() - start_time
+    
+    # Adicionar métricas extras
+    stats['execution_time'] = execution_time
+    stats['algorithm'] = algorithm_name
+    stats['route_nodes'] = len(route) if route else 0
+    
+    print(f"Distância: {distance:.2f}")
+    print(f"Cobertura: {stats.get('coverage', 0):.2%}")
+    print(f"Tempo: {execution_time:.4f}s")
+    print(f"Nós na rota: {stats['route_nodes']}")
+    
+    if config.get('show_route', False) and route:
+        print(f"Rota: {' -> '.join(map(str, route[:10]))}{'...' if len(route) > 10 else ''}")
+    
+    return route, distance, stats
 
 
 def main():
-    """Demonstra as funcionalidades de métricas do CLI."""
-    print("DEMONSTRAÇÃO DAS FUNCIONALIDADES DE MÉTRICAS NO CLI")
+    """
+    Função principal com interface de linha de comando.
+    """
+    parser = argparse.ArgumentParser(description='Comparação de algoritmos de otimização de rotas')
+    
+    parser.add_argument('--algorithms', '-a', nargs='+', 
+                       choices=['aco', 'brute_force', 'greedy', 'all'],
+                       default=['all'],
+                       help='Algoritmos para executar')
+    
+    parser.add_argument('--graph-type', '-g', choices=['simple', 'complex'],
+                       default='complex',
+                       help='Tipo de grafo para teste')
+    
+    parser.add_argument('--stops', '-s', type=int, default=6,
+                       help='Número de pontos para visitar')
+    
+    parser.add_argument('--aco-ants', type=int, default=10,
+                       help='Número de formigas no ACO')
+    
+    parser.add_argument('--aco-iterations', type=int, default=50,
+                       help='Número de iterações do ACO')
+    
+    parser.add_argument('--bf-time-limit', type=float, default=30.0,
+                       help='Limite de tempo para força bruta (segundos)')
+    
+    parser.add_argument('--verbose', '-v', action='store_true',
+                       help='Mostrar informações detalhadas')
+    
+    parser.add_argument('--show-routes', action='store_true',
+                       help='Mostrar as rotas encontradas')
+    
+    parser.add_argument('--output', '-o', type=str,
+                       help='Arquivo para salvar resultados JSON')
+    
+    args = parser.parse_args()
+    
+    # Expandir 'all' para todos os algoritmos
+    if 'all' in args.algorithms:
+        algorithms = ['greedy', 'aco', 'brute_force']
+    else:
+        algorithms = args.algorithms
+    
+    print("COMPARAÇÃO DE ALGORITMOS - MÉTRICAS DETALHADAS")
     print("=" * 60)
     
-    # Verificar se estamos no diretório correto
-    if not os.path.exists("src/rota_aco/cli/run.py"):
-        print("❌ Execute este script a partir do diretório raiz do projeto.")
-        sys.exit(1)
+    # Criar grafo de teste
+    if args.graph_type == 'simple':
+        loader = GraphLoader()
+        graph, meta_edges = loader.create_simple_test_graph()
+        all_nodes = list(graph.nodes())
+        start_node = all_nodes[0]
+        exit_node = all_nodes[-1]
+        available_stops = all_nodes[1:-1]
+    else:
+        graph, meta_edges, all_nodes = create_complex_test_graph()
+        start_node = "N00"  # Canto superior esquerdo
+        exit_node = "N33"   # Canto inferior direito
+        available_stops = [node for node in all_nodes if node not in [start_node, exit_node]]
     
-    # Criar diretório temporário para outputs
-    with tempfile.TemporaryDirectory() as temp_dir:
-        print(f"Usando diretório temporário: {temp_dir}")
-        
-        # Comando base (seria necessário ter um arquivo GraphML real para execução completa)
-        base_cmd = [
-            sys.executable, "-m", "rota_aco.cli.run",
-            "--graph", "graphml/pequeno.graphml",  # Assumindo que existe
-            "--start-lat", "-15.7801",
-            "--start-lon", "-47.9292", 
-            "--exit-lat", "-15.7901",
-            "--exit-lon", "-47.9392",
-            "--iterations", "3",  # Poucas iterações para demo
-            "--ants", "5"
-        ]
-        
-        # 1. Demonstrar help com novos flags
-        help_cmd = [sys.executable, "-m", "rota_aco.cli.run", "--help"]
-        run_command(help_cmd, "Mostrando ajuda com novos flags de métricas")
-        
-        # 2. Demonstrar flag básico de métricas
-        metrics_cmd = base_cmd + [
-            "--metrics",
-            "--report-output", os.path.join(temp_dir, "basic_metrics")
-        ]
-        run_command(metrics_cmd, "Execução básica com métricas habilitadas")
-        
-        # 3. Demonstrar análise de convergência
-        convergence_cmd = base_cmd + [
-            "--convergence-analysis",
-            "--report-output", os.path.join(temp_dir, "convergence_analysis")
-        ]
-        run_command(convergence_cmd, "Análise detalhada de convergência")
-        
-        # 4. Demonstrar comparação de múltiplas execuções
-        compare_cmd = base_cmd + [
-            "--compare-runs", "3",
-            "--statistical-tests",
-            "--report-output", os.path.join(temp_dir, "comparison")
-        ]
-        run_command(compare_cmd, "Comparação de múltiplas execuções")
-        
-        # 5. Demonstrar modo acadêmico
-        academic_cmd = base_cmd + [
-            "--academic-mode",
-            "--export-raw-data",
-            "--visualization-formats", "png", "svg",
-            "--report-output", os.path.join(temp_dir, "academic")
-        ]
-        run_command(academic_cmd, "Modo acadêmico com alta qualidade")
-        
-        # 6. Demonstrar modo rápido
-        fast_cmd = base_cmd + [
-            "--fast-mode",
-            "--report-output", os.path.join(temp_dir, "fast")
-        ]
-        run_command(fast_cmd, "Modo rápido para testes")
-        
-        # 7. Demonstrar configuração personalizada
-        config_file = os.path.join(temp_dir, "custom_config.json")
-        with open(config_file, 'w') as f:
-            f.write("""{
-    "convergence_analysis": {
-        "convergence_threshold": 0.005,
-        "stability_window": 20
-    },
-    "visualizations": {
-        "figure_dpi": 150,
-        "output_formats": ["png"]
-    },
-    "reports": {
-        "include_raw_data": true
+    # Selecionar pontos para visitar
+    import random
+    random.seed(42)  # Para resultados reproduzíveis
+    stops_to_visit = random.sample(available_stops, min(args.stops, len(available_stops)))
+    
+    print(f"Grafo: {len(graph.nodes())} nós, {len(graph.edges())} arestas")
+    print(f"Início: {start_node}, Fim: {exit_node}")
+    print(f"Pontos a visitar ({len(stops_to_visit)}): {stops_to_visit}")
+    
+    # Configurações dos algoritmos
+    configs = {
+        'aco': {
+            'n_ants': args.aco_ants,
+            'n_iterations': args.aco_iterations,
+            'verbose': args.verbose,
+            'show_route': args.show_routes
+        },
+        'brute_force': {
+            'time_limit': args.bf_time_limit if len(stops_to_visit) > 6 else None,
+            'verbose': args.verbose,
+            'show_route': args.show_routes
+        },
+        'greedy': {
+            'verbose': args.verbose,
+            'show_route': args.show_routes
+        }
     }
-}""")
+    
+    # Executar algoritmos
+    results = {}
+    
+    for algorithm in algorithms:
+        try:
+            route, distance, stats = run_algorithm_test(
+                algorithm, graph, meta_edges, stops_to_visit, 
+                start_node, exit_node, configs[algorithm]
+            )
+            
+            results[algorithm] = {
+                'route': route,
+                'distance': distance,
+                'stats': stats
+            }
+            
+        except Exception as e:
+            print(f"Erro no algoritmo {algorithm}: {e}")
+            if args.verbose:
+                import traceback
+                traceback.print_exc()
+    
+    # Resumo comparativo
+    if len(results) > 1:
+        print("\n" + "=" * 60)
+        print("RESUMO COMPARATIVO")
+        print("=" * 60)
         
-        config_cmd = base_cmd + [
-            "--metrics-config", config_file,
-            "--report-output", os.path.join(temp_dir, "custom_config")
-        ]
-        run_command(config_cmd, "Configuração personalizada via arquivo JSON")
+        print(f"{'Algoritmo':<12} {'Distância':<12} {'Tempo (s)':<12} {'Cobertura':<12} {'Eficiência'}")
+        print("-" * 65)
         
-        # 8. Demonstrar execução com semente para reprodutibilidade
-        seed_cmd = base_cmd + [
-            "--metrics",
-            "--seed", "42",
-            "--compare-runs", "2",
-            "--report-output", os.path.join(temp_dir, "reproducible")
-        ]
-        run_command(seed_cmd, "Execução reprodutível com semente")
+        # Calcular eficiência (distância/tempo)
+        for name, result in results.items():
+            distance = result['distance']
+            exec_time = result['stats']['execution_time']
+            coverage = result['stats'].get('coverage', 0)
+            efficiency = distance / exec_time if exec_time > 0 else float('inf')
+            
+            print(f"{name.upper():<12} {distance:<12.2f} {exec_time:<12.4f} {coverage:<12.2%} {efficiency:<12.1f}")
+    
+    # Salvar resultados se solicitado
+    if args.output:
+        output_path = Path(args.output)
+        output_path.parent.mkdir(parents=True, exist_ok=True)
         
-        print(f"\n{'='*60}")
-        print("RESUMO DOS NOVOS FLAGS DE MÉTRICAS")
-        print(f"{'='*60}")
-        print("""
-FLAGS BÁSICOS:
-  --metrics                    Habilita coleta de métricas expandidas
-  --report-output DIR          Define diretório de saída para relatórios
-  --compare-runs N             Executa N vezes para análise comparativa
-  --convergence-analysis       Análise detalhada de convergência
-  --metrics-config FILE        Configuração personalizada via JSON
-
-FLAGS AVANÇADOS:
-  --statistical-tests          Habilita testes estatísticos
-  --confidence-level LEVEL     Nível de confiança (padrão: 0.95)
-  --export-raw-data           Inclui dados brutos nos relatórios
-  --visualization-formats      Formatos de saída (png, svg, pdf)
-  --academic-mode             Modo acadêmico: alta qualidade
-  --fast-mode                 Modo rápido: análise simplificada
-  --parallel-executions       Execuções paralelas (experimental)
-  --seed NUMBER               Semente para reprodutibilidade
-  --save-execution-data       Salva dados de execução (padrão: sim)
-  --load-previous-data PATH   Carrega dados anteriores para comparação
-
-EXEMPLOS DE USO:
-  # Análise básica com métricas
-  python -m rota_aco.cli.run --graph grafo.graphml ... --metrics
-  
-  # Comparação de 5 execuções com testes estatísticos
-  python -m rota_aco.cli.run --graph grafo.graphml ... --compare-runs 5 --statistical-tests
-  
-  # Modo acadêmico para publicação
-  python -m rota_aco.cli.run --graph grafo.graphml ... --academic-mode --export-raw-data
-  
-  # Execução rápida para testes
-  python -m rota_aco.cli.run --graph grafo.graphml ... --fast-mode
-  
-  # Configuração personalizada
-  python -m rota_aco.cli.run --graph grafo.graphml ... --metrics-config config.json
-        """)
+        # Preparar dados para JSON
+        json_results = {}
+        for name, result in results.items():
+            json_results[name] = {
+                'distance': result['distance'],
+                'stats': {k: v for k, v in result['stats'].items() 
+                         if isinstance(v, (int, float, str, bool, list))}
+            }
         
-        print(f"\n{'='*60}")
-        print("DEMONSTRAÇÃO CONCLUÍDA")
-        print(f"{'='*60}")
-        print(f"Arquivos de exemplo criados em: {temp_dir}")
-        print("Para execução real, certifique-se de ter um arquivo GraphML válido.")
+        with open(output_path, 'w', encoding='utf-8') as f:
+            json.dump({
+                'test_config': {
+                    'graph_type': args.graph_type,
+                    'stops_count': len(stops_to_visit),
+                    'stops_to_visit': stops_to_visit,
+                    'start_node': start_node,
+                    'exit_node': exit_node
+                },
+                'results': json_results
+            }, f, indent=2, ensure_ascii=False)
+        
+        print(f"\nResultados salvos em: {output_path}")
+    
+    print("\nTeste concluído!")
+    return results
 
 
 if __name__ == "__main__":

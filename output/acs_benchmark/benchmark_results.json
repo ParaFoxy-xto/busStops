@@ -1,0 +1,173 @@
+{
+  "benchmark_info": {
+    "timestamp": "2025-07-18T06:06:56.169193",
+    "graph_file": "graphml/grafo.graphml",
+    "n_runs": 10,
+    "config": {
+      "n_ants": 10,
+      "n_iterations": 50,
+      "capacity": 70,
+      "w_c": 10.0,
+      "w_r": 1.0,
+      "w_d": 0.5
+    }
+  },
+  "statistics": {
+    "total_runs": 10,
+    "successful_runs": 0,
+    "success_rate": 0.0,
+    "error": "Nenhuma execução bem-sucedida"
+  },
+  "raw_results": [
+    {
+      "run_id": 1,
+      "success": false,
+      "execution_time": 4.760316371917725,
+      "error": "ACS falhou: ",
+      "output_dir": "output/acs_benchmark\\run_01",
+      "config_used": {
+        "n_ants": 10,
+        "n_iterations": 50,
+        "capacity": 70,
+        "w_c": 10.0,
+        "w_r": 1.0,
+        "w_d": 0.5
+      }
+    },
+    {
+      "run_id": 2,
+      "success": false,
+      "execution_time": 4.6585752964019775,
+      "error": "ACS falhou: ",
+      "output_dir": "output/acs_benchmark\\run_02",
+      "config_used": {
+        "n_ants": 10,
+        "n_iterations": 50,
+        "capacity": 70,
+        "w_c": 10.0,
+        "w_r": 1.0,
+        "w_d": 0.5
+      }
+    },
+    {
+      "run_id": 3,
+      "success": false,
+      "execution_time": 4.476351499557495,
+      "error": "ACS falhou: ",
+      "output_dir": "output/acs_benchmark\\run_03",
+      "config_used": {
+        "n_ants": 10,
+        "n_iterations": 50,
+        "capacity": 70,
+        "w_c": 10.0,
+        "w_r": 1.0,
+        "w_d": 0.5
+      }
+    },
+    {
+      "run_id": 4,
+      "success": false,
+      "execution_time": 4.409653186798096,
+      "error": "ACS falhou: ",
+      "output_dir": "output/acs_benchmark\\run_04",
+      "config_used": {
+        "n_ants": 10,
+        "n_iterations": 50,
+        "capacity": 70,
+        "w_c": 10.0,
+        "w_r": 1.0,
+        "w_d": 0.5
+      }
+    },
+    {
+      "run_id": 5,
+      "success": false,
+      "execution_time": 4.479750633239746,
+      "error": "ACS falhou: ",
+      "output_dir": "output/acs_benchmark\\run_05",
+      "config_used": {
+        "n_ants": 10,
+        "n_iterations": 50,
+        "capacity": 70,
+        "w_c": 10.0,
+        "w_r": 1.0,
+        "w_d": 0.5
+      }
+    },
+    {
+      "run_id": 6,
+      "success": false,
+      "execution_time": 4.389869451522827,
+      "error": "ACS falhou: ",
+      "output_dir": "output/acs_benchmark\\run_06",
+      "config_used": {
+        "n_ants": 10,
+        "n_iterations": 50,
+        "capacity": 70,
+        "w_c": 10.0,
+        "w_r": 1.0,
+        "w_d": 0.5
+      }
+    },
+    {
+      "run_id": 7,
+      "success": false,
+      "execution_time": 4.533531427383423,
+      "error": "ACS falhou: ",
+      "output_dir": "output/acs_benchmark\\run_07",
+      "config_used": {
+        "n_ants": 10,
+        "n_iterations": 50,
+        "capacity": 70,
+        "w_c": 10.0,
+        "w_r": 1.0,
+        "w_d": 0.5
+      }
+    },
+    {
+      "run_id": 8,
+      "success": false,
+      "execution_time": 4.424633264541626,
+      "error": "ACS falhou: ",
+      "output_dir": "output/acs_benchmark\\run_08",
+      "config_used": {
+        "n_ants": 10,
+        "n_iterations": 50,
+        "capacity": 70,
+        "w_c": 10.0,
+        "w_r": 1.0,
+        "w_d": 0.5
+      }
+    },
+    {
+      "run_id": 9,
+      "success": false,
+      "execution_time": 4.528927326202393,
+      "error": "ACS falhou: ",
+      "output_dir": "output/acs_benchmark\\run_09",
+      "config_used": {
+        "n_ants": 10,
+        "n_iterations": 50,
+        "capacity": 70,
+        "w_c": 10.0,
+        "w_r": 1.0,
+        "w_d": 0.5
+      }
+    },
+    {
+      "run_id": 10,
+      "success": false,
+      "execution_time": 4.375349760055542,
+      "error": "ACS falhou: ",
+      "output_dir": "output/acs_benchmark\\run_10",
+      "config_used": {
+        "n_ants": 10,
+        "n_iterations": 50,
+        "capacity": 70,
+        "w_c": 10.0,
+        "w_r": 1.0,
+        "w_d": 0.5
+      }
+    }
+  ]
+}
