@@ -5,6 +5,7 @@ import os
 import sys
 import traceback
 import json
+from typing import List, Dict, Any, Tuple, Optional
 
 # --- Importações Corrigidas e Completas ---
 from rota_aco.data.preprocess import load_graph, get_bus_stops
@@ -613,10 +614,444 @@ def generate_metrics_reports(execution_data_list, metrics_config, args):
             traceback.print_exc()
 
 
+def create_organized_output_structure(base_name: str) -> dict:
+    """
+    Cria estrutura organizada de diretórios para outputs.
+    
+    Args:
+        base_name: Nome base para a pasta (ex: 'pequeno', 'longo', 'completo')
+        
+    Returns:
+        dict: Dicionário com os caminhos dos diretórios criados
+    """
+    # Criar diretório principal
+    main_output_dir = os.path.join("output", f"output_{base_name}")
+    
+    # Criar subdiretórios
+    subdirs = {
+        'main': main_output_dir,
+        'images': os.path.join(main_output_dir, "images"),
+        'metrics': os.path.join(main_output_dir, "metrics"),
+        'reports': os.path.join(main_output_dir, "reports"),
+        'data': os.path.join(main_output_dir, "data")
+    }
+    
+    # Criar todos os diretórios
+    for dir_path in subdirs.values():
+        os.makedirs(dir_path, exist_ok=True)
+    
+    return subdirs
+
+
+def extract_graph_name(graph_path: str) -> str:
+    """
+    Extrai o nome do grafo do caminho do arquivo.
+    
+    Args:
+        graph_path: Caminho para o arquivo do grafo
+        
+    Returns:
+        str: Nome do grafo (ex: 'pequeno', 'longo', 'grafo')
+    """
+    filename = os.path.basename(graph_path)
+    name = os.path.splitext(filename)[0]
+    
+    # Mapear nomes específicos
+    name_mapping = {
+        'grafo': 'completo',
+        'pequeno': 'pequeno',
+        'longo': 'longo'
+    }
+    
+    return name_mapping.get(name, name)
+
+
+def save_execution_data(output_dirs: dict, args, result_data: dict, meta_graph, graph):
+    """
+    Salva dados da execução na pasta data/.
+    
+    Args:
+        output_dirs: Dicionário com caminhos dos diretórios
+        args: Argumentos da linha de comando
+        result_data: Dados dos resultados da execução
+        meta_graph: Meta-grafo construído
+        graph: Grafo original
+    """
+    import json
+    from datetime import datetime
+    
+    # Dados da configuração
+    config_data = {
+        'graph_file': args.graph,
+        'start_coordinates': {'lat': args.start_lat, 'lon': args.start_lon},
+        'exit_coordinates': {'lat': args.exit_lat, 'lon': args.exit_lon},
+        'aco_parameters': {
+            'ants': args.ants,
+            'iterations': args.iterations,
+            'alpha': args.alpha,
+            'beta': args.beta,
+            'rho': args.rho,
+            'Q': args.Q
+        },
+        'quality_weights': {
+            'w_c': args.w_c,
+            'w_r': args.w_r,
+            'w_d': args.w_d
+        },
+        'execution_timestamp': datetime.now().isoformat()
+    }
+    
+    # Salvar configuração
+    config_path = os.path.join(output_dirs['data'], 'execution_config.json')
+    with open(config_path, 'w', encoding='utf-8') as f:
+        json.dump(config_data, f, indent=2, ensure_ascii=False)
+    
+    # Dados dos resultados
+    results_data = {
+        'execution_summary': result_data,
+        'graph_statistics': {
+            'original_nodes': len(graph.nodes()),
+            'original_edges': len(graph.edges()),
+            'meta_nodes': len(meta_graph.nodes()),
+            'meta_edges': len(meta_graph.edges())
+        },
+        'timestamp': datetime.now().isoformat()
+    }
+    
+    # Salvar resultados
+    results_path = os.path.join(output_dirs['data'], 'execution_results.json')
+    with open(results_path, 'w', encoding='utf-8') as f:
+        json.dump(results_data, f, indent=2, ensure_ascii=False)
+    
+    print(f"Dados da execução salvos em: {output_dirs['data']}")
+
+
+def generate_execution_report(output_dirs: dict, args, result_data: dict, meta_graph, graph):
+    """
+    Gera relatório da execução na pasta reports/.
+    
+    Args:
+        output_dirs: Dicionário com caminhos dos diretórios
+        args: Argumentos da linha de comando
+        result_data: Dados dos resultados da execução
+        meta_graph: Meta-grafo construído
+        graph: Grafo original
+    """
+    from datetime import datetime
+    
+    # Criar relatório em markdown
+    report_content = f"""# Relatório de Execução ACS
+
+**Data de Execução:** {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')}  
+**Grafo Utilizado:** {os.path.basename(args.graph)}
+
+## Configuração da Execução
+
+### Coordenadas
+- **Ponto de Partida:** {args.start_lat}, {args.start_lon}
+- **Ponto de Chegada:** {args.exit_lat}, {args.exit_lon}
+
+### Parâmetros ACO
+- **Formigas:** {args.ants}
+- **Iterações:** {args.iterations}
+- **Alpha (α):** {args.alpha}
+- **Beta (β):** {args.beta}
+- **Rho (ρ):** {args.rho}
+- **Q:** {args.Q}
+
+### Pesos da Função de Qualidade
+- **Cobertura (w_c):** {args.w_c}
+- **Número de Rotas (w_r):** {args.w_r}
+- **Distância (w_d):** {args.w_d}
+
+## Estatísticas do Grafo
+
+### Grafo Original
+- **Nós:** {len(graph.nodes())}
+- **Arestas:** {len(graph.edges())}
+
+### Meta-Grafo
+- **Nós:** {len(meta_graph.nodes())}
+- **Arestas:** {len(meta_graph.edges())}
+
+## Resultados da Execução
+
+### Melhor Solução Encontrada
+- **Número de Rotas:** {result_data.get('num_routes', 'N/A')}
+- **Distância Total:** {result_data.get('total_dist', 'N/A'):.2f} metros
+- **Cobertura:** {result_data.get('coverage', 0)*100:.2f}%
+
+### Arquivos Gerados
+- **Visualização da Rota:** `images/acs_route.png`
+- **Meta-Grafo:** `images/meta_graph.png`
+- **Rotas no Meta-Grafo:** `images/routes_on_meta.png`
+- **Dados da Execução:** `data/execution_config.json`, `data/execution_results.json`
+
+## Conclusões
+
+A execução foi concluída com sucesso, gerando {result_data.get('num_routes', 0)} rota(s) 
+que cobrem {result_data.get('coverage', 0)*100:.2f}% das paradas necessárias.
+
+---
+*Relatório gerado automaticamente pelo sistema Rota_ACO*
+"""
+    
+    # Salvar relatório
+    report_path = os.path.join(output_dirs['reports'], 'execution_report.md')
+    with open(report_path, 'w', encoding='utf-8') as f:
+        f.write(report_content)
+    
+    print(f"Relatório da execução salvo em: {report_path}")
+
+
+def save_metrics_summary(output_dirs: dict, result_data: dict):
+    """
+    Salva resumo das métricas na pasta metrics/.
+    
+    Args:
+        output_dirs: Dicionário com caminhos dos diretórios
+        result_data: Dados dos resultados da execução
+    """
+    import json
+    from datetime import datetime
+    
+    # Métricas básicas
+    metrics_summary = {
+        'execution_metrics': {
+            'total_routes': result_data.get('num_routes', 0),
+            'total_distance_meters': result_data.get('total_dist', 0),
+            'coverage_percentage': result_data.get('coverage', 0) * 100,
+            'execution_timestamp': datetime.now().isoformat()
+        },
+        'quality_indicators': {
+            'routes_efficiency': 'Good' if result_data.get('num_routes', 0) <= 3 else 'Needs Improvement',
+            'coverage_quality': 'Excellent' if result_data.get('coverage', 0) > 0.7 else 'Good' if result_data.get('coverage', 0) > 0.5 else 'Needs Improvement',
+            'distance_efficiency': result_data.get('total_dist', 0) / max(result_data.get('num_routes', 1), 1)
+        }
+    }
+    
+    # Salvar métricas
+    metrics_path = os.path.join(output_dirs['metrics'], 'metrics_summary.json')
+    with open(metrics_path, 'w', encoding='utf-8') as f:
+        json.dump(metrics_summary, f, indent=2, ensure_ascii=False)
+    
+    print(f"Resumo das métricas salvo em: {metrics_path}")
+
+
+def analyze_route_validity(routes: List[Any], opposites: Dict[Any, List[Any]], capacity: int = 70) -> Dict[str, int]:
+    """
+    Analisa a validade das rotas e conta violações.
+    
+    Args:
+        routes: Lista de rotas para analisar
+        opposites: Dicionário de paradas opostas
+        capacity: Capacidade máxima do veículo
+        
+    Returns:
+        Dict com contadores de violações
+    """
+    violations = {
+        'capacity_violations': 0,
+        'opposite_violations': 0,
+        'total_invalid_routes': 0,
+        'total_routes': len(routes)
+    }
+    
+    for route in routes:
+        route_invalid = False
+        
+        # Verificar violações de capacidade (assumindo 70 passageiros por rota)
+        if len(route) > capacity // 5:  # Estimativa simples
+            violations['capacity_violations'] += 1
+            route_invalid = True
+        
+        # Verificar violações de paradas opostas
+        for i, stop in enumerate(route):
+            if stop in opposites:
+                opposite_stops = opposites[stop]
+                for j, other_stop in enumerate(route):
+                    if i != j and other_stop in opposite_stops:
+                        violations['opposite_violations'] += 1
+                        route_invalid = True
+                        break
+        
+        if route_invalid:
+            violations['total_invalid_routes'] += 1
+    
+    return violations
+
+
+def generate_convergence_analysis(output_dirs: dict, controller_history: List[Dict], opposites: Dict, capacity: int = 70):
+    """
+    Gera análise detalhada de convergência com gráficos e dados de rotas inválidas.
+    
+    Args:
+        output_dirs: Dicionário com caminhos dos diretórios
+        controller_history: Histórico do controller
+        opposites: Dicionário de paradas opostas
+        capacity: Capacidade do veículo
+    """
+    import matplotlib.pyplot as plt
+    import json
+    from datetime import datetime
+    
+    if not controller_history:
+        print("Nenhum histórico de convergência disponível.")
+        return
+    
+    # Extrair dados para análise
+    iterations = []
+    time_distances = []
+    time_routes = []
+    time_coverage = []
+    vehicle_distances = []
+    vehicle_routes = []
+    vehicle_coverage = []
+    best_quality = []
+    
+    for entry in controller_history:
+        iterations.append(entry['iteration'])
+        time_distances.append(entry['time_metrics']['dist'])
+        time_routes.append(entry['time_metrics']['count'])
+        time_coverage.append(entry['time_metrics']['coverage'])
+        vehicle_distances.append(entry['vehicle_metrics']['dist'])
+        vehicle_routes.append(entry['vehicle_metrics']['count'])
+        vehicle_coverage.append(entry['vehicle_metrics']['coverage'])
+        best_quality.append(entry['best_quality_so_far'])
+    
+    # Criar gráficos de convergência
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2, figsize=(15, 12))
+    fig.suptitle('Análise de Convergência ACS-TIME vs ACS-VEHICLE', fontsize=16, fontweight='bold')
+    
+    # Gráfico 1: Distância Total
+    ax1.plot(iterations, time_distances, 'b-', label='ACS-TIME', linewidth=2, marker='o', markersize=4)
+    ax1.plot(iterations, vehicle_distances, 'r-', label='ACS-VEHICLE', linewidth=2, marker='s', markersize=4)
+    ax1.set_xlabel('Iteração')
+    ax1.set_ylabel('Distância Total (m)')
+    ax1.set_title('Evolução da Distância Total')
+    ax1.legend()
+    ax1.grid(True, alpha=0.3)
+    
+    # Gráfico 2: Número de Rotas
+    ax2.plot(iterations, time_routes, 'b-', label='ACS-TIME', linewidth=2, marker='o', markersize=4)
+    ax2.plot(iterations, vehicle_routes, 'r-', label='ACS-VEHICLE', linewidth=2, marker='s', markersize=4)
+    ax2.set_xlabel('Iteração')
+    ax2.set_ylabel('Número de Rotas')
+    ax2.set_title('Evolução do Número de Rotas')
+    ax2.legend()
+    ax2.grid(True, alpha=0.3)
+    
+    # Gráfico 3: Cobertura
+    ax3.plot(iterations, [c*100 for c in time_coverage], 'b-', label='ACS-TIME', linewidth=2, marker='o', markersize=4)
+    ax3.plot(iterations, [c*100 for c in vehicle_coverage], 'r-', label='ACS-VEHICLE', linewidth=2, marker='s', markersize=4)
+    ax3.set_xlabel('Iteração')
+    ax3.set_ylabel('Cobertura (%)')
+    ax3.set_title('Evolução da Cobertura')
+    ax3.legend()
+    ax3.grid(True, alpha=0.3)
+    
+    # Gráfico 4: Melhor Qualidade Geral
+    ax4.plot(iterations, best_quality, 'g-', label='Melhor Qualidade', linewidth=3, marker='D', markersize=5)
+    ax4.set_xlabel('Iteração')
+    ax4.set_ylabel('Qualidade')
+    ax4.set_title('Convergência da Melhor Qualidade')
+    ax4.legend()
+    ax4.grid(True, alpha=0.3)
+    
+    plt.tight_layout()
+    
+    # Salvar gráfico
+    convergence_plot_path = os.path.join(output_dirs['images'], 'convergence_analysis.png')
+    plt.savefig(convergence_plot_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    
+    # Análise de convergência
+    convergence_data = {
+        'analysis_timestamp': datetime.now().isoformat(),
+        'total_iterations': len(iterations),
+        'convergence_summary': {
+            'final_best_quality': best_quality[-1] if best_quality else 0,
+            'initial_quality': best_quality[0] if best_quality else 0,
+            'improvement_percentage': ((best_quality[0] - best_quality[-1]) / best_quality[0] * 100) if best_quality and best_quality[0] > 0 else 0
+        },
+        'acs_time_final': {
+            'distance': time_distances[-1] if time_distances else 0,
+            'routes': time_routes[-1] if time_routes else 0,
+            'coverage': time_coverage[-1] * 100 if time_coverage else 0
+        },
+        'acs_vehicle_final': {
+            'distance': vehicle_distances[-1] if vehicle_distances else 0,
+            'routes': vehicle_routes[-1] if vehicle_routes else 0,
+            'coverage': vehicle_coverage[-1] * 100 if vehicle_coverage else 0
+        },
+        'convergence_detection': {
+            'converged': len(set(best_quality[-5:])) <= 2 if len(best_quality) >= 5 else False,
+            'stability_window': 5,
+            'final_variance': sum([(q - best_quality[-1])**2 for q in best_quality[-5:]]) / 5 if len(best_quality) >= 5 else 0
+        }
+    }
+    
+    # Salvar dados de convergência
+    convergence_data_path = os.path.join(output_dirs['metrics'], 'convergence_analysis.json')
+    with open(convergence_data_path, 'w', encoding='utf-8') as f:
+        json.dump(convergence_data, f, indent=2, ensure_ascii=False)
+    
+    # Gerar relatório de convergência
+    convergence_report = f"""# Análise de Convergência ACS
+
+**Data da Análise:** {datetime.now().strftime('%d/%m/%Y às %H:%M:%S')}  
+**Total de Iterações:** {len(iterations)}
+
+## Resumo da Convergência
+
+### Qualidade Final
+- **Qualidade Inicial:** {best_quality[0]:.2f}
+- **Qualidade Final:** {best_quality[-1]:.2f}
+- **Melhoria:** {convergence_data['convergence_summary']['improvement_percentage']:.2f}%
+
+### ACS-TIME (Final)
+- **Distância:** {time_distances[-1]:.2f}m
+- **Rotas:** {time_routes[-1]}
+- **Cobertura:** {time_coverage[-1]*100:.2f}%
+
+### ACS-VEHICLE (Final)
+- **Distância:** {vehicle_distances[-1]:.2f}m
+- **Rotas:** {vehicle_routes[-1]}
+- **Cobertura:** {vehicle_coverage[-1]*100:.2f}%
+
+## Análise de Estabilidade
+
+- **Convergiu:** {'Sim' if convergence_data['convergence_detection']['converged'] else 'Não'}
+- **Variância Final:** {convergence_data['convergence_detection']['final_variance']:.4f}
+
+## Arquivos Gerados
+
+- **Gráfico de Convergência:** `images/convergence_analysis.png`
+- **Dados de Convergência:** `metrics/convergence_analysis.json`
+
+---
+*Análise gerada automaticamente pelo sistema Rota_ACO*
+"""
+    
+    # Salvar relatório de convergência
+    convergence_report_path = os.path.join(output_dirs['reports'], 'convergence_report.md')
+    with open(convergence_report_path, 'w', encoding='utf-8') as f:
+        f.write(convergence_report)
+    
+    print(f"Análise de convergência salva em: {convergence_plot_path}")
+    print(f"Relatório de convergência salvo em: {convergence_report_path}")
+    print(f"Dados de convergência salvos em: {convergence_data_path}")
+
+
 def main():
     """Função principal que executa o pipeline completo."""
     parser = setup_arg_parser()
     args = parser.parse_args()
+    
+    # Extrair nome do grafo e criar estrutura organizada
+    graph_name = extract_graph_name(args.graph)
+    output_dirs = create_organized_output_structure(graph_name)
+    print(f"Estrutura de output criada em: {output_dirs['main']}")
 
     # --- 1. Carregamento e Preparação dos Dados ---
     print("--- 1. Carregando e Preparando Dados ---")
@@ -652,13 +1087,10 @@ def main():
             print("[ERRO] A construção resultou em um meta-grafo vazio.")
             sys.exit(1)
 
-        # --- NOVA SEÇÃO: VISUALIZAÇÃO IMEDIATA DO META-GRAFO PARA DEPURAÇÃO ---
-        output_dir = "output"
-        os.makedirs(output_dir, exist_ok=True)
+        # --- VISUALIZAÇÃO DO META-GRAFO ---
         if args.meta_output:
-            meta_graph_path = os.path.join(output_dir, args.meta_output)
+            meta_graph_path = os.path.join(output_dirs['images'], "meta_graph.png")
             print(f"\n[DEPURAÇÃO] Salvando visualização do meta-grafo em: '{meta_graph_path}'")
-            # Usa a função plot_meta_graph, que agora só precisa do meta_graph
             plot_meta_graph(
                 meta_graph,
                 output_path=meta_graph_path,
@@ -666,7 +1098,7 @@ def main():
                 exit_node=exit_node,
                 show_labels=True
             )
-        # --- FIM DA NOVA SEÇÃO ---
+        # --- FIM DA VISUALIZAÇÃO DO META-GRAFO ---
 
     except Exception as e:
         print(f"[ERRO] Falha na construção do meta-grafo: {e}")
@@ -688,6 +1120,9 @@ def main():
         
         # Configurar sistema de métricas
         metrics_config = setup_metrics_config(args)
+        # Atualizar diretório de métricas para usar estrutura organizada
+        metrics_config.base_output_dir = output_dirs['metrics']
+        metrics_config._ensure_directories()
         print(f"Diretório de saída das métricas: {metrics_config.base_output_dir}")
         
         # Determinar número de execuções
@@ -791,21 +1226,43 @@ def main():
     print(f"  - Número de Rotas: {num_routes}")
     print(f"  - Distância Total: {total_dist:.2f}")
     print(f"  - Cobertura: {coverage*100:.2f}%")
+    
+    # Preparar dados dos resultados para salvar
+    result_data = {
+        'num_routes': num_routes,
+        'total_dist': total_dist,
+        'coverage': coverage,
+        'best_routes': best_routes
+    }
+    
+    # Salvar dados, relatórios e métricas nas pastas organizadas
+    print("\n--- Salvando Dados Complementares ---")
+    save_execution_data(output_dirs, args, result_data, meta_graph, graph)
+    generate_execution_report(output_dirs, args, result_data, meta_graph, graph)
+    save_metrics_summary(output_dirs, result_data)
+    
+    # Gerar análise de convergência se histórico disponível
+    if hasattr(controller, 'history') and controller.history:
+        print("\n--- Gerando Análise de Convergência ---")
+        generate_convergence_analysis(output_dirs, controller.history, all_opposites, args.capacity)
 
     # Geração das visualizações de mapa (código existente)
     expanded_routes = [expand_meta_route(r, meta_graph, meta_edges) for r in best_routes]
 
 
+    # Salvar visualizações na pasta de imagens organizada
     if args.output:
-        output_path = os.path.join(output_dir, args.output)
+        output_path = os.path.join(output_dirs['images'], "acs_route.png")
         if args.folium:
+            # Para Folium, usar extensão .html
+            output_path = os.path.join(output_dirs['images'], "acs_route.html")
             visualize_routes_folium(graph, expanded_routes[0], bus_stops_nodes, output_path, start_node, exit_node)
         else:
             plot_multiple_routes(original_graph=graph, routes=expanded_routes, all_bus_stops=bus_stops_nodes, output_path=output_path, start_node=start_node, exit_node=exit_node)
         print(f"Visualização da rota final salva em: '{output_path}'") 
 
     if args.meta_output:
-        meta_routes_path = os.path.join(output_dir, f"routes_on_{args.meta_output}")
+        meta_routes_path = os.path.join(output_dirs['images'], "routes_on_meta.png")
         plot_multiple_meta_routes(meta_graph, best_routes, stops_to_visit, meta_routes_path, start_node, exit_node, show_labels=True)
         print(f"Visualização do meta-grafo com rotas salva em: '{meta_routes_path}'")
 

@@ -1,0 +1,25 @@
+{
+  "graph_file": "graphml/grafo.graphml",
+  "start_coordinates": {
+    "lat": -15.776,
+    "lon": -47.8716
+  },
+  "exit_coordinates": {
+    "lat": -15.76111111,
+    "lon": -47.87461111
+  },
+  "aco_parameters": {
+    "ants": 10,
+    "iterations": 10,
+    "alpha": 1.0,
+    "beta": 2.0,
+    "rho": 0.1,
+    "Q": 1.0
+  },
+  "quality_weights": {
+    "w_c": 10.0,
+    "w_r": 1.0,
+    "w_d": 0.5
+  },
+  "execution_timestamp": "2025-07-17T22:40:22.558884"
+}

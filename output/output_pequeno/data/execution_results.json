@@ -1,0 +1,25 @@
+{
+  "execution_summary": {
+    "num_routes": 1,
+    "total_dist": 2209.119025401011,
+    "coverage": 0.5,
+    "best_routes": [
+      [
+        2705153069,
+        12529762096,
+        12529762099,
+        12529762088,
+        12529762102,
+        12529762086,
+        4826126847
+      ]
+    ]
+  },
+  "graph_statistics": {
+    "original_nodes": 158,
+    "original_edges": 230,
+    "meta_nodes": 12,
+    "meta_edges": 41
+  },
+  "timestamp": "2025-07-17T22:38:35.305784"
+}

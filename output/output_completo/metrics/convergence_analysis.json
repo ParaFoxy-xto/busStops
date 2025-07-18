@@ -1,0 +1,24 @@
+{
+  "analysis_timestamp": "2025-07-17T22:40:23.395447",
+  "total_iterations": 7,
+  "convergence_summary": {
+    "final_best_quality": 2.7000795955194974,
+    "initial_quality": 1.700054294514899,
+    "improvement_percentage": -58.82313901568361
+  },
+  "acs_time_final": {
+    "distance": 8522.406433544937,
+    "routes": 3,
+    "coverage": 52.0
+  },
+  "acs_vehicle_final": {
+    "distance": 3028.0846067454568,
+    "routes": 1,
+    "coverage": 32.0
+  },
+  "convergence_detection": {
+    "converged": true,
+    "stability_window": 5,
+    "final_variance": 0.0
+  }
+}

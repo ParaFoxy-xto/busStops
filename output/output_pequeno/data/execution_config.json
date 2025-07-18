@@ -1,0 +1,25 @@
+{
+  "graph_file": "graphml/pequeno.graphml",
+  "start_coordinates": {
+    "lat": -15.776,
+    "lon": -47.8716
+  },
+  "exit_coordinates": {
+    "lat": -15.7605,
+    "lon": -47.8741
+  },
+  "aco_parameters": {
+    "ants": 10,
+    "iterations": 20,
+    "alpha": 1.0,
+    "beta": 2.0,
+    "rho": 0.1,
+    "Q": 1.0
+  },
+  "quality_weights": {
+    "w_c": 10.0,
+    "w_r": 1.0,
+    "w_d": 0.5
+  },
+  "execution_timestamp": "2025-07-17T22:38:35.305391"
+}
