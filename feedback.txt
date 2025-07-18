@@ -1,0 +1,56 @@
+
+baseline algoritimo que resolve tsp - ga ou grafos ou so para ter comparação
+--------------------------------------------------------------------------------------------------------------------------------------------
+
+filtrar o que vou mostrar e a ordem /// organização dos slides
+
+explicar tudo no Sumario
+
+Revisão passar rápida, cada slide é 1 minuto
+
+Descrição do que é o ACO, o que é o VRP = como vou mapear no ACO, 
+
+definir as variáveis, 
+
+numero de veículos, distancia e demanda
+
+
+o que tem de bom [e poder mapear a técnica geral em um problema especifico, ficou por alto(heurísticas etc.)
+o que é o ACO de forma geral, agora vou aplicar para o VRP
+
+parada opostas n são zeradas, são forbidden, explicar o sentido delas
+---------------------------------------------------------------------------------------------------------
+
+expandir o resultado
+
++- no slide 8
+
+slide 5, colocar uma representação do meta-grafo nos rotas
+
+descricao da variavel
+
+slide 8. descrição de alta demanda explicar que é a que cobre todas as rotas
+
+slide 9. colocar explicação da formula
+
+slide 10 explicar a geração de rotas 
+
+métricas de % de rotas válidas
+
+slide 14
+
+Regras de negócio ser mostrada no início
+
+
+
+slide 3. atender a demanda
+slide 4. explicar o construir o Metagrafo
+
+formula para avaliar a melhor solução
+explicar mais o ACO e explicar as formulas, alto nível, saber mapear VRP para ACO
+
+mostrar o que a força bruta faz... xD numero de avaliações é isso q usamos
+mais recurso gasto, sorte, espaço de busca pequeno, variança
+
+slide 10. explicar os picos e melhorar, sempre  printar o resultados
+deixar claro q sei fazer

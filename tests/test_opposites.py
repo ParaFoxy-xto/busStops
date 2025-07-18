@@ -4,8 +4,8 @@ Script de teste: Lista pares de paradas opostas por proximidade e por acesso.
 Uso: python test_opposites.py <graphml_file>
 """
 import sys
-from rota_aco.data.preprocess import load_graph, get_bus_stops, pre_process_opposites
-from rota_aco.data.opposites import find_opposites_by_access
+from rota_aco.data.preprocess import load_graph, get_bus_stops
+from rota_aco.data.opposites import find_opposites_by_access, find_opposites_by_proximity
 import random
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
@@ -56,7 +56,7 @@ def main(graphml_path: str, precision: int = 5):
     bus_stops = get_bus_stops(G)
 
     # Calcula opostos por proximidade
-    opposites_proximity = pre_process_opposites(bus_stops, G, precision=precision)
+    opposites_proximity = find_opposites_by_proximity(bus_stops, G, precision=precision)
     # Calcula opostos por acesso (bus_access)
     opposites_access = find_opposites_by_access(G, bus_stops)
 

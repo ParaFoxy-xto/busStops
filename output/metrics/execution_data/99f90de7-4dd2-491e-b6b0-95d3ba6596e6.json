@@ -1,0 +1,14 @@
+{
+  "execution_id": "99f90de7-4dd2-491e-b6b0-95d3ba6596e6",
+  "algorithm_type": "ACS-TIME",
+  "config": {
+    "ants": 10
+  },
+  "execution_time": 1e-06,
+  "timestamp": "2025-07-17T17:15:07.318543",
+  "success": true,
+  "error_message": null,
+  "num_iterations": 0,
+  "num_routes": 2,
+  "final_fitness": 0.0
+}

@@ -1,0 +1,20 @@
+{
+  "visualizations": {
+    "figure_dpi": 150,
+    "output_formats": [
+      "png"
+    ],
+    "color_scheme": "presentation",
+    "font_size": 16,
+    "line_width": 3,
+    "marker_size": 8,
+    "use_bold_fonts": true,
+    "high_contrast": true
+  },
+  "reports": {
+    "language": "pt-BR",
+    "include_raw_data": false,
+    "summary_only": true,
+    "highlight_key_results": true
+  }
+}

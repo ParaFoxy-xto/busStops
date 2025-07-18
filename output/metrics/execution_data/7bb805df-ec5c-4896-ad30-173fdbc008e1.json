@@ -1,0 +1,81 @@
+{
+  "execution_id": "7bb805df-ec5c-4896-ad30-173fdbc008e1",
+  "algorithm_type": "ACS-VEHICLE",
+  "config": {
+    "algorithm_params": {
+      "alpha": 1.0,
+      "beta": 2.0,
+      "rho": 0.1,
+      "Q": 1.0
+    },
+    "problem_params": {
+      "capacity": 70,
+      "max_route_length": 100
+    },
+    "quality_weights": {
+      "w_c": 10.0,
+      "w_r": 1.0,
+      "w_d": 0.5
+    },
+    "n_ants": 10,
+    "n_iterations": 3
+  },
+  "execution_time": 1.049041748046875e-05,
+  "timestamp": "2025-07-17T17:31:13.539324",
+  "success": true,
+  "error_message": null,
+  "routes": [
+    {
+      "stops": [
+        1,
+        2,
+        3
+      ],
+      "distances": [
+        100,
+        150
+      ],
+      "passenger_load": [
+        0,
+        10
+      ],
+      "total_distance": 250,
+      "total_passengers": 10,
+      "is_valid": true,
+      "capacity_violations": 0,
+      "opposite_stops_violations": 0
+    }
+  ],
+  "iterations_data": [],
+  "final_solution": {
+    "routes": [
+      {
+        "stops": [
+          1,
+          2,
+          3
+        ],
+        "distances": [
+          100,
+          150
+        ],
+        "passenger_load": [
+          0,
+          10
+        ],
+        "total_distance": 250,
+        "total_passengers": 10,
+        "is_valid": true,
+        "capacity_violations": 0,
+        "opposite_stops_violations": 0
+      }
+    ],
+    "total_vehicles": 1,
+    "total_distance": 250,
+    "total_passengers_served": 10,
+    "fitness_time": 250.0,
+    "fitness_vehicle": 1250.0,
+    "is_feasible": true,
+    "generation_time": 0.0
+  }
+}

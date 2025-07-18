@@ -1,0 +1,14 @@
+{
+  "execution_id": "100f1fe0-978d-4a60-aded-7444f0b478a0",
+  "algorithm_type": "ACS-VEHICLE",
+  "config": {
+    "ants": 5
+  },
+  "execution_time": 0.0,
+  "timestamp": "2025-07-17T17:15:07.320433",
+  "success": false,
+  "error_message": "Erro de teste",
+  "num_iterations": 0,
+  "num_routes": 0,
+  "final_fitness": 0.0
+}

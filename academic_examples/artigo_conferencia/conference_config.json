@@ -1,0 +1,35 @@
+{
+  "convergence_analysis": {
+    "convergence_threshold": 0.001,
+    "stability_window": 100,
+    "enable_plateau_detection": true,
+    "track_diversity": true
+  },
+  "visualizations": {
+    "figure_dpi": 600,
+    "output_formats": [
+      "pdf",
+      "eps"
+    ],
+    "color_scheme": "publication",
+    "include_confidence_intervals": true,
+    "include_statistical_annotations": true,
+    "font_size": 8,
+    "use_latex_fonts": true
+  },
+  "reports": {
+    "language": "en-US",
+    "include_raw_data": true,
+    "academic_formatting": true,
+    "include_methodology": true,
+    "include_statistical_tests": true,
+    "citation_style": "ieee"
+  },
+  "statistical_analysis": {
+    "confidence_level": 0.99,
+    "enable_normality_tests": true,
+    "enable_variance_tests": true,
+    "enable_effect_size": true,
+    "enable_power_analysis": true
+  }
+}

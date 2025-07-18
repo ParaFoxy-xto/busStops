@@ -1,0 +1,34 @@
+{
+  "demonstracao_metricas": {
+    "data_execucao": "2025-07-17T21:04:31.775412",
+    "metricas_demonstradas": [
+      "Qualidade das rotas",
+      "Análise de convergência",
+      "Análise estatística comparativa",
+      "Métricas de transporte",
+      "Visualizações"
+    ],
+    "calculos_explicados": [
+      "Porcentagem de rotas válidas",
+      "Cobertura de demanda",
+      "Eficiência de utilização de veículos",
+      "Ponto de convergência",
+      "Estabilidade da solução",
+      "Estatísticas descritivas",
+      "Tempo total de viagem",
+      "Balanceamento de carga",
+      "Eficiência energética",
+      "Índice de acessibilidade"
+    ],
+    "formulas_utilizadas": {
+      "rotas_validas": "(rotas_validas / total_rotas) × 100",
+      "cobertura_demanda": "(paradas_cobertas / total_paradas) × 100",
+      "utilizacao_veiculos": "(passageiros_transportados / capacidade_total) × 100",
+      "estabilidade": "desvio_padrão(últimas_N_iterações)",
+      "taxa_melhoria": "(fitness_inicial - fitness_final) / fitness_inicial",
+      "balanceamento_carga": "1 - (desvio_padrão_cargas / média_cargas)",
+      "eficiencia_energetica": "distância_total / passageiros_totais",
+      "acessibilidade": "paradas_cobertas / área_km²"
+    }
+  }
+}

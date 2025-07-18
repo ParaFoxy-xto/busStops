@@ -1,0 +1,106 @@
+{
+  "execution_id": "7ccf83f9-cfc4-4f1a-8a9e-4d793b3b0648",
+  "algorithm_type": "ACS-VEHICLE",
+  "config": {
+    "algorithm_params": {
+      "alpha": 1.0,
+      "beta": 2.0,
+      "rho": 0.1,
+      "Q": 1.0
+    },
+    "problem_params": {
+      "capacity": 70,
+      "max_route_length": 100,
+      "max_route_attempts": 10
+    },
+    "quality_weights": {
+      "w_c": 10.0,
+      "w_r": 1.0,
+      "w_d": 0.5
+    },
+    "n_ants": 5,
+    "n_iterations": 10
+  },
+  "execution_time": 0.0020134449005126953,
+  "timestamp": "2025-07-17T21:02:29.686623",
+  "success": true,
+  "error_message": null,
+  "routes": [
+    {
+      "stops": [
+        2705153069,
+        12529762096,
+        12529762099,
+        12529762100,
+        12529762087,
+        12529762086,
+        4826126847
+      ],
+      "distances": [
+        876.011301684156,
+        307.76170937820564,
+        261.31264457623115,
+        420.3346921434436,
+        246.0590815021085,
+        100.8709025043074
+      ],
+      "passenger_load": [
+        0,
+        10,
+        10,
+        10,
+        10,
+        10
+      ],
+      "total_distance": 2212.3503317884524,
+      "total_passengers": 50,
+      "is_valid": true,
+      "capacity_violations": 0,
+      "opposite_stops_violations": 0
+    }
+  ],
+  "iterations_data": [],
+  "final_solution": {
+    "routes": [
+      {
+        "stops": [
+          2705153069,
+          12529762096,
+          12529762099,
+          12529762100,
+          12529762087,
+          12529762086,
+          4826126847
+        ],
+        "distances": [
+          876.011301684156,
+          307.76170937820564,
+          261.31264457623115,
+          420.3346921434436,
+          246.0590815021085,
+          100.8709025043074
+        ],
+        "passenger_load": [
+          0,
+          10,
+          10,
+          10,
+          10,
+          10
+        ],
+        "total_distance": 2212.3503317884524,
+        "total_passengers": 50,
+        "is_valid": true,
+        "capacity_violations": 0,
+        "opposite_stops_violations": 0
+      }
+    ],
+    "total_vehicles": 1,
+    "total_distance": 2212.3503317884524,
+    "total_passengers_served": 50,
+    "fitness_time": 2212.3503317884524,
+    "fitness_vehicle": 3212.3503317884524,
+    "is_feasible": true,
+    "generation_time": 0.0
+  }
+}
